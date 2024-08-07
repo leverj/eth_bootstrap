@@ -38,7 +38,7 @@ function beacon_genesis(){
 function account_import(){
     cd $EXECUTION
     rm -rf .gethdata/keystore
-    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata account import $ETH_DIR/secret.txt
+    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata account import --password ../../geth_password.txt $ETH_DIR/secret.txt
 }
 
 function geth_genesis(){
@@ -50,6 +50,8 @@ function geth_genesis(){
 function geth_start(){
     cd $EXECUTION
     nohup $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex --datadir $EXECUTION/.gethdata --nodiscover --syncmode full --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" --password $ETH_DIR/geth_password.txt --authrpc.port 8551 &> $ETH_DIR/eth_node/execution.log &
+    # save pid to file
+    echo $! > $ETH_DIR/eth_node/execution.pid
 }
 
 function beacon_start(){
@@ -70,19 +72,27 @@ function beacon_start(){
         --suggested-fee-recipient 0x123463a4b065722e99115d6c222f267d9cabb524 \
         --minimum-peers-per-subnet 0 \
         --enable-debug-rpc-endpoints &> $ETH_DIR/eth_node/beacon.log &
+    # save pid to file
+    echo $! > $ETH_DIR/eth_node/beacon.pid
 }
+
 function validator_start(){
     cd $CONSENSUS
     nohup $ETH_BIN/validator --datadir $CONSENSUS/.validatordata --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml --beacon-rpc-provider=localhost:4000 &> $ETH_DIR/eth_node/validator.log &
+    # save pid to file
+    echo $! > $ETH_DIR/eth_node/validator.pid
 }
 
 function genesis(){
+    stop_it
     rm -rf $ETH_DIR/eth_node
     mkdir -p $CONSENSUS
     mkdir -p $EXECUTION
     beacon_genesis
     geth_genesis
     account_import
+    sleep 10
+    start_it
 }
 
 function install_it(){
@@ -90,11 +100,12 @@ function install_it(){
     get_geth
     create_prysm
     deposit_cli
-#    genesis
+    genesis
 }
 
 
 function start_it(){
+    echo start_it
     geth_start
     beacon_start
     validator_start
@@ -104,9 +115,12 @@ function processes(){
   ps -ef | grep '/root/eth_bootstrap' | grep -v 'run /root/eth_bootstrap' | grep -v 'grep /root/eth_bootstrap'
 }
 
+
 function stop_it(){
-  processes
-  processes | perl -lane 'print "kill $F[1]"' | sh
+  kill $(cat $ETH_DIR/eth_node/beacon.pid)
+  kill $(cat $ETH_DIR/eth_node/validator.pid)
+  kill $(cat $ETH_DIR/eth_node/execution.pid)
+  rm -f $ETH_DIR/eth_node/*.pid
 }
 
 function  deposit_cli() {
