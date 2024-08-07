@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-ETH_DIR=/root/ethereum
+ETH_DIR=/root/eth_bootstrap
 CONSENSUS=$ETH_DIR/eth_node/consensus
 EXECUTION=$ETH_DIR/eth_node/execution
 ETH_BIN=$ETH_DIR/eth_bin
@@ -101,7 +101,7 @@ function start_it(){
 }
 
 function processes(){
-  ps -ef | grep '/root/ethereum' | grep -v 'grep /root/ethereum'
+  ps -ef | grep '/root/eth_bootstrap' | grep -v 'grep /root/eth_bootstrap'
 }
 
 function stop_it(){
