@@ -32,7 +32,7 @@ function beacon_genesis(){
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
     cp $ETH_DIR/genesis.json .
-    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 --genesis-time-delay 240 --chain-config-file $CONSENSUS/config.yml --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json --output-ssz $CONSENSUS/genesis.ssz
+    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json --output-ssz $CONSENSUS/genesis.ssz
 }
 
 function account_import(){
@@ -101,7 +101,7 @@ function start_it(){
 }
 
 function processes(){
-  ps -ef | grep '/root/eth_bootstrap' | grep -v 'grep /root/eth_bootstrap'
+  ps -ef | grep '/root/eth_bootstrap' | grep -v 'run /root/eth_bootstrap' | grep -v 'grep /root/eth_bootstrap'
 }
 
 function stop_it(){
@@ -128,6 +128,13 @@ function new_mnemonic(){
                                             --num_validators 1 \
                                             --chain mainnet \
                                             --keystore_password gluon_gluon
+}
+
+function verify_chain(){
+  local ADDRESS=$1
+  curl --silent -X POST -H "Content-Type: application/json"  \
+       --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$ADDRESS\", \"latest\"],\"id\":1}" \
+        http://localhost:8545 | jq --raw-output '.result' | perl -lane 'print hex($F[0])'
 }
 
 function log_it() {
@@ -158,7 +165,8 @@ stop) stop_it ;;
 deposit_cli) deposit_cli;;
 new_mnemonic) new_mnemonic;;
 
-log) log_it $@ ;;
+verify) verify_chain "$@";;
+log) log_it "$@" ;;
 
 *) usage ;;
 esac
