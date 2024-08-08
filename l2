@@ -105,6 +105,7 @@ function install_it(){
 
 
 function start_it(){
+    stop_it
     echo start_it
     geth_start
     beacon_start
@@ -145,6 +146,29 @@ function new_mnemonic(){
 }
 
 function verify_chain(){
+  local IMPORTED_ACCOUNT=0x123463a4b065722e99115d6c222f267d9cabb524
+  local DEPOSIT_ACCOUNT=$1
+  echo "Balance: $IMPORTED_ACCOUNT $(get_balance $IMPORTED_ACCOUNT)"
+  echo "Balance: $DEPOSIT_ACCOUNT $(get_balance $DEPOSIT_ACCOUNT)"
+  echo "Transfering 1 ETH from $IMPORTED_ACCOUNT to $DEPOSIT_ACCOUNT"
+  transfer $IMPORTED_ACCOUNT $DEPOSIT_ACCOUNT 0x$(echo "obase=16; 5000000000000000000000" | bc)
+  sleep 10
+  echo "Balance: $IMPORTED_ACCOUNT $(get_balance $IMPORTED_ACCOUNT)"
+  echo "Balance: $DEPOSIT_ACCOUNT $(get_balance $DEPOSIT_ACCOUNT)"
+}
+
+function transfer(){
+  local FROM=$1
+  local TO=$2
+  local AMOUNT=$3
+  echo "Transfering $AMOUNT from $FROM to $TO"
+  curl --silent -X POST -H "Content-Type: application/json"  \
+       --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[{\"from\":\"$FROM\",\"to\":\"$TO\",\"value\":\"$AMOUNT\"}],\"id\":1}" \
+        http://localhost:8545
+
+}
+
+function get_balance(){
   local ADDRESS=$1
   curl --silent -X POST -H "Content-Type: application/json"  \
        --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$ADDRESS\", \"latest\"],\"id\":1}" \
@@ -160,7 +184,7 @@ function log_it() {
 }
 
 function usage(){
-    echo './l2.sh install|import|run'
+    echo './l2 install|genesis|start|stop|verify|log'
 }
 
 
@@ -168,19 +192,17 @@ OPERATION=$1
 shift
 case "${OPERATION}" in
 install) install_it ;;
-
 genesis) genesis;;
-import) account_import ;;
-
-ps) processes;;
 start) start_it;;
 stop) stop_it ;;
-
-deposit_cli) deposit_cli;;
-new_mnemonic) new_mnemonic;;
-
 verify) verify_chain "$@";;
 log) log_it "$@" ;;
+
+import) account_import ;;
+ps) processes;;
+deposit_cli) deposit_cli;;
+new_mnemonic) new_mnemonic;;
+balance) get_balance "$@";;
 
 *) usage ;;
 esac
