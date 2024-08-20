@@ -183,6 +183,27 @@ function log_it() {
   esac
 }
 
+function install_node() {
+  cd
+  apt install -y curl
+  curl -fsSL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh
+  bash nodesource_setup.sh
+  apt-get install -y nodejs
+  node -v
+  npm i -g n
+  n 16.20.2
+  cd $ETH_DIR
+}
+
+function install_go() {
+  echo "Installing go"
+  cd
+  wget https://golang.org/dl/go1.22.5.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.22.5.linux-amd64.tar.gz
+  echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
+  source ~/.profile
+}
+
 function usage(){
     echo './l2 install|genesis|start|stop|verify|log'
 }
@@ -203,7 +224,8 @@ ps) processes;;
 deposit_cli) deposit_cli;;
 new_mnemonic) new_mnemonic;;
 balance) get_balance "$@";;
-
+node) install_node ;;
+go) install_go ;;
 *) usage ;;
 esac
 #test
