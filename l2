@@ -48,15 +48,17 @@ function geth_genesis(){
 }
 
 function geth_start(){
-    cd $EXECUTION
-    nohup $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex --datadir $EXECUTION/.gethdata --nodiscover --syncmode full --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" --password $ETH_DIR/geth_password.txt --authrpc.port 8551 &> $ETH_DIR/eth_node/execution.log &
-    # save pid to file
-    echo $! > $ETH_DIR/eth_node/execution.pid
+  $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex --datadir $EXECUTION/.gethdata --nodiscover --syncmode full --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" --password $ETH_DIR/geth_password.txt --authrpc.port 8551
 }
+#function geth_start(){
+#    cd $EXECUTION
+#    nohup $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex --datadir $EXECUTION/.gethdata --nodiscover --syncmode full --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" --password $ETH_DIR/geth_password.txt --authrpc.port 8551 &> $ETH_DIR/eth_node/execution.log &
+    # save pid to file
+#    echo $! > $ETH_DIR/eth_node/execution.pid
+#}
 
-function beacon_start(){
-    cd $CONSENSUS
-    nohup $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
+function  beacon_start() {
+  $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
         --min-sync-peers 0 \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
@@ -71,16 +73,49 @@ function beacon_start(){
         --jwt-secret $ETH_DIR/jwt.hex \
         --suggested-fee-recipient 0x123463a4b065722e99115d6c222f267d9cabb524 \
         --minimum-peers-per-subnet 0 \
-        --enable-debug-rpc-endpoints &> $ETH_DIR/eth_node/beacon.log &
-    # save pid to file
-    echo $! > $ETH_DIR/eth_node/beacon.pid
+        --enable-debug-rpc-endpoints
 }
 
+#function beacon_start(){
+#    cd $CONSENSUS
+#    nohup $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
+#        --min-sync-peers 1 \
+#	--p2p-host-ip 51.158.62.147 \
+#        --genesis-state $CONSENSUS/genesis.ssz \
+#	--peer /ip4/51.159.143.255/tcp/13000/p2p/16Uiu2HAmHsj8f9TyPwPghiFmSHN75gDX6z3zRxmYuPfGyn5rvMeH \
+#        --interop-eth1data-votes \
+#        --chain-config-file $CONSENSUS/config.yml \
+#        --contract-deployment-block 0 \
+#        --chain-id 32382 \
+#        --network-id 32382 \
+#        --rpc-host 0.0.0.0 \
+#        --grpc-gateway-host 0.0.0.0 \
+#        --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
+#        --accept-terms-of-use \
+#        --jwt-secret $ETH_DIR/jwt.hex \
+#        --suggested-fee-recipient 0x123463a4b065722e99115d6c222f267d9cabb524 \
+#        --minimum-peers-per-subnet 0 \
+#        --enable-debug-rpc-endpoints &> $ETH_DIR/eth_node/beacon.log &
+#    # save pid to file
+#    echo $! > $ETH_DIR/eth_node/beacon.pid
+#}
+
 function validator_start(){
-    cd $CONSENSUS
-    nohup $ETH_BIN/validator --datadir $CONSENSUS/.validatordata --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml --beacon-rpc-provider=localhost:4000 &> $ETH_DIR/eth_node/validator.log &
-    # save pid to file
-    echo $! > $ETH_DIR/eth_node/validator.pid
+  $ETH_BIN/validator --datadir $CONSENSUS/.validatordata --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml --beacon-rpc-provider=localhost:4000
+}
+
+#function validator_start(){
+#    cd $CONSENSUS
+#    nohup $ETH_BIN/validator --datadir $CONSENSUS/.validatordata --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml --beacon-rpc-provider=localhost:4000 &> $ETH_DIR/eth_node/validator.log &
+#    # save pid to file
+#    echo $! > $ETH_DIR/eth_node/validator.pid
+#}
+
+function genesis_for_docker(){
+  mkdir -p $CONSENSUS
+  mkdir -p $EXECUTION
+  beacon_genesis
+  geth_genesis
 }
 
 function genesis(){
@@ -201,13 +236,60 @@ function docker_run() {
               eth_node bash
 #  docker run -it --rm eth_node bash
 }
+
+function docker_account_import() {
+  docker run -it --rm \
+              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              eth_node ./l2 import
+}
+
+function docker_start() {
+  echo "Starting docker containers $1"
+  local OPERATION=$1
+  shift
+  docker_stop $OPERATION
+  case $OPERATION in
+    execution) docker run -d  --name execution \
+            -v ./eth_node:/root/eth_bootstrap/eth_node \
+            eth_node ./l2 geth_start;;
+    beacon) docker run -d  --name beacon \
+            -v ./eth_node:/root/eth_bootstrap/eth_node \
+            eth_node ./l2 beacon_start;;
+    validator) docker run -d  --name validator \
+            -v ./eth_node:/root/eth_bootstrap/eth_node \
+            eth_node ./l2 validator_start;;
+    *) for cont in execution beacon validator; do docker_start $cont; done;;
+  esac
+}
+
+function docker_stop() {
+  echo "Stopping docker containers $1"
+  local OPERATION=$1
+  shift
+  case $OPERATION in
+    execution) docker stop execution; docker rm execution;;
+    beacon) docker stop beacon; docker rm beacon;;
+    validator) docker stop validator; docker rm validator;;
+    *) for cont in execution beacon validator; do docker_stop $cont; done;;
+  esac
+}
+
+function docker_usage(){
+  echo "Usage: ./l2 docker build|genesis|import|run"
+}
+
 docker_it(){
-  echo "Docker it $1 $2"
-  case "$1" in
+  echo "Docker it $1"
+  local OPERATION=$1
+  shift
+  case "$OPERATION" in
     build) docker_build;;
     genesis) docker_genesis;;
+    import) docker_account_import;;
     run) docker_run;;
-    *) usage;;
+    start) docker_start;;
+    stop) docker_stop;;
+    *) docker_usage;;
   esac
 }
 
@@ -232,13 +314,6 @@ function install_go() {
   source ~/.profile
 }
 
-function genesis_for_docker(){
-  mkdir -p $CONSENSUS
-  mkdir -p $EXECUTION
-  beacon_genesis
-  geth_genesis
-}
-
 function usage(){
     echo './l2 install|genesis|start|stop|verify|log'
 }
@@ -256,6 +331,10 @@ stop) stop_it ;;
 verify) verify_chain "$@";;
 log) log_it "$@" ;;
 docker) docker_it $@;;
+
+geth_start) geth_start;;
+beacon_start) beacon_start;;
+validator_start) validator_start;;
 
 import) account_import ;;
 ps) processes;;
