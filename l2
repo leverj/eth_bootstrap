@@ -183,6 +183,10 @@ function log_it() {
   esac
 }
 
+docker_it(){
+  docker build -t eth_node .
+}
+
 function install_node() {
   cd
   apt install -y curl
@@ -214,10 +218,13 @@ shift
 case "${OPERATION}" in
 install) install_it ;;
 genesis) genesis;;
+geth_genesis) geth_genesis;;
 start) start_it;;
+beacon_start) beacon_start;;
 stop) stop_it ;;
 verify) verify_chain "$@";;
 log) log_it "$@" ;;
+docker) docker_it ;;
 
 import) account_import ;;
 ps) processes;;
