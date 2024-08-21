@@ -183,8 +183,32 @@ function log_it() {
   esac
 }
 
-docker_it(){
+function docker_build() {
+  echo "Building docker image"
   docker build -t eth_node .
+}
+
+function docker_genesis() {
+  docker run -it --rm \
+              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              eth_node ./l2 genesis
+}
+
+function docker_run() {
+  echo "Running docker image"
+  docker run -it --rm \
+              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              eth_node bash
+#  docker run -it --rm eth_node bash
+}
+docker_it(){
+  echo "Docker it $1 $2"
+  case "$1" in
+    build) docker_build;;
+    genesis) docker_genesis;;
+    run) docker_run;;
+    *) usage;;
+  esac
 }
 
 function install_node() {
@@ -208,6 +232,13 @@ function install_go() {
   source ~/.profile
 }
 
+function genesis_for_docker(){
+  mkdir -p $CONSENSUS
+  mkdir -p $EXECUTION
+  beacon_genesis
+  geth_genesis
+}
+
 function usage(){
     echo './l2 install|genesis|start|stop|verify|log'
 }
@@ -224,7 +255,7 @@ beacon_start) beacon_start;;
 stop) stop_it ;;
 verify) verify_chain "$@";;
 log) log_it "$@" ;;
-docker) docker_it ;;
+docker) docker_it $@;;
 
 import) account_import ;;
 ps) processes;;
@@ -233,6 +264,9 @@ new_mnemonic) new_mnemonic;;
 balance) get_balance "$@";;
 node) install_node ;;
 go) install_go ;;
+
+install_for_docker) init && get_geth && create_prysm;;
+genesis_for_docker) genesis_for_docker;;
 *) usage ;;
 esac
 #test
