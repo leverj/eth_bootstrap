@@ -191,7 +191,7 @@ function docker_build() {
 function docker_genesis() {
   docker run -it --rm \
               -v ./eth_node:/root/eth_bootstrap/eth_node \
-              eth_node ./l2 genesis
+              eth_node ./l2 genesis_for_docker
 }
 
 function docker_run() {
