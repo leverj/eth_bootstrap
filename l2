@@ -1,13 +1,14 @@
 #!/usr/bin/bash
 
-ETH_DIR=/root/eth_bootstrap
+# real path of the folder
+ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
 EXECUTION=$ETH_DIR/eth_node/execution
 ETH_BIN=$ETH_DIR/eth_bin
 
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
-                  -v ./eth_node:/root/eth_bootstrap/eth_node \
+                  -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
                   eth_node ./l2 $1"
   echo $COMMAND | sh
 }
@@ -131,7 +132,7 @@ function geth_start(){
 function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
   docker run -d --name execution \
-              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 8551:8551 \
               -p 8545:8545 \
               -p 8546:8546 \
@@ -159,7 +160,7 @@ function  beacon_start() {
 function docker_start_container_beacon(){
 #fixme: set appropriate ports using -p
   docker run -d --name beacon \
-              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 4000:4000 \
       	      -p 3500:3500 \
       	      -p 8080:8080 \
@@ -177,7 +178,7 @@ function validator_start(){
 function docker_start_container_validator(){
   #fixme: set appropriate ports using -p
   docker run -d --name validator \
-              -v ./eth_node:/root/eth_bootstrap/eth_node \
+              -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
               eth_node ./l2 validator_start
 }
 
@@ -195,7 +196,7 @@ function docker_start() {
 }
 
 function docker_bash() {
-  docker run -it --rm -v ./eth_node:/root/eth_bootstrap/eth_node eth_node bash
+  docker run -it --rm -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node eth_node bash
 }
 
 function usage(){
