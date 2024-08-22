@@ -200,7 +200,7 @@ function docker_bash() {
 }
 
 function usage(){
-    echo './l2 docker build|genesis|import|start|stop|bash|all'
+    echo './l2 docker build|genesis|import|start|stop|bash|install|all'
 }
 
 docker_it(){
@@ -214,6 +214,7 @@ docker_it(){
     stop) docker_stop $@;;
     start) docker_start $@;;
     bash) docker_bash;;
+    install) docker_build; docker_genesis; docker_account_import;;
     all) docker_build; docker_genesis; docker_account_import; docker_start;;
     *) usage;;
   esac
