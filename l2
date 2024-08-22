@@ -132,6 +132,10 @@ function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
   docker run -d --name execution \
               -v ./eth_node:/root/eth_bootstrap/eth_node \
+	            -p 8551:8551 \
+              -p 8545:8545 \
+              -p 8546:8546 \
+              -p 9001:9001 \
               eth_node ./l2 geth_start
 }
 function  beacon_start() {
@@ -156,12 +160,19 @@ function docker_start_container_beacon(){
 #fixme: set appropriate ports using -p
   docker run -d --name beacon \
               -v ./eth_node:/root/eth_bootstrap/eth_node \
+	            -p 4000:4000 \
+      	      -p 3500:3500 \
+      	      -p 8080:8080 \
+      	      -p 6060:6060 \
+              -p 9090:9090 \
+              -p 13000:13000\
+              -p 12000:12000 \
               eth_node ./l2 beacon_start
 }
 function validator_start(){
   $ETH_BIN/validator --datadir $CONSENSUS/.validatordata \
     --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml \
-    --beacon-rpc-provider=localhost:4000
+    --beacon-rpc-provider=172.17.0.1:4000
 }
 function docker_start_container_validator(){
   #fixme: set appropriate ports using -p
