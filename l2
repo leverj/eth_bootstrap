@@ -70,15 +70,19 @@ function docker_build() {
 
 function beacon_genesis(){
     echo "Generating beacon genesis"
+    rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
     mkdir -p $CONSENSUS
     mkdir -p $EXECUTION
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
     cp $ETH_DIR/genesis.json .
-    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json --output-ssz $CONSENSUS/genesis.ssz
+    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
+      --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
+      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
+      --output-ssz $CONSENSUS/genesis.ssz
 }
 function geth_genesis(){
-    mkdir -p $EXECUTION
+    rm -rf $EXECUTION/.gethdata
     cd $EXECUTION
     rm -rf .gethdata/geth
     $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
@@ -155,7 +159,9 @@ function docker_start_container_beacon(){
               eth_node ./l2 beacon_start
 }
 function validator_start(){
-  $ETH_BIN/validator --datadir $CONSENSUS/.validatordata --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml --beacon-rpc-provider=localhost:4000
+  $ETH_BIN/validator --datadir $CONSENSUS/.validatordata \
+    --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml \
+    --beacon-rpc-provider=localhost:4000
 }
 function docker_start_container_validator(){
   #fixme: set appropriate ports using -p
