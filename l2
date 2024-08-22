@@ -188,10 +188,10 @@ function docker_start() {
   shift
   docker_stop $OPERATION
   case $OPERATION in
-    execution) docker_start_container_geth;;
     beacon) docker_start_container_beacon;;
+    execution) docker_start_container_geth;;
     validator) docker_start_container_validator;;
-    *) for cont in execution beacon validator; do docker_start $cont; done;;
+    *) for cont in beacon execution validator; do docker_start $cont; done;;
   esac
 }
 
