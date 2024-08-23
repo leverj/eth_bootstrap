@@ -3,7 +3,7 @@
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
-EXECUTION=$ETH_DIR/eth_node/execution
+GETH=$ETH_DIR/eth_node/geth
 ETH_BIN=$ETH_DIR/eth_bin
 
 function docker_run_rm() {
@@ -73,20 +73,21 @@ function beacon_genesis(){
     echo "Generating beacon genesis"
     rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
     mkdir -p $CONSENSUS
-    mkdir -p $EXECUTION
+    mkdir -p $GETH
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
     cp $ETH_DIR/genesis.json .
     $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
       --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
-      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
+      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $GETH/genesis.json \
       --output-ssz $CONSENSUS/genesis.ssz
 }
 function geth_genesis(){
-    rm -rf $EXECUTION/.gethdata
-    cd $EXECUTION
+    rm -rf $GETH/.gethdata
+    cd $GETH
     rm -rf .gethdata/geth
-    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
+    $ETH_BIN/geth --datadir=$GETH/.gethdata init $GETH/genesis.json
+    account_import
 }
 function docker_genesis() {
   echo "Running genesis for $1"
@@ -100,9 +101,9 @@ function docker_genesis() {
 }
 
 function account_import(){
-    cd $EXECUTION
+    cd $GETH
     rm -rf .gethdata/keystore
-    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata account \
+    $ETH_BIN/geth --datadir=$GETH/.gethdata account \
       import --password ../../geth_password.txt $ETH_DIR/secret.txt
 }
 function docker_account_import() {
@@ -115,9 +116,9 @@ function docker_stop() {
   shift
   case $OPERATION in
     beacon) docker stop beacon; docker rm beacon;;
-    execution) docker stop execution; docker rm execution;;
+    geth) docker stop geth; docker rm geth;;
     validator) docker stop validator; docker rm validator;;
-    *) for cont in beacon execution validator; do docker_stop $cont; done;;
+    *) for cont in beacon geth validator; do docker_stop $cont; done;;
   esac
 }
 
@@ -125,13 +126,13 @@ function geth_start(){
   $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* \
     --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
     --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex \
-    --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
+    --datadir $GETH/.gethdata --nodiscover --syncmode full \
     --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" \
     --password $ETH_DIR/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
-  docker run -d --name execution \
+  docker run -d --name geth \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 8551:8551 \
               -p 8545:8545 \
@@ -141,7 +142,8 @@ function docker_start_container_geth(){
 }
 function  beacon_start() {
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers 0 \
+        --min-sync-peers 1 \
+	      --peer /ip4/51.159.143.255/tcp/13000/p2p/16Uiu2HAm3FSixygrZiZLzjBiPLDchCy6cbNPTu3P8mZgYYwqoT6t \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
         --chain-config-file $CONSENSUS/config.yml \
@@ -150,11 +152,12 @@ function  beacon_start() {
         --network-id 32382 \
         --rpc-host 0.0.0.0 \
         --grpc-gateway-host 0.0.0.0 \
-        --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
+        --execution-endpoint $GETH/.gethdata/geth.ipc \
         --accept-terms-of-use \
         --jwt-secret $ETH_DIR/jwt.hex \
         --suggested-fee-recipient 0x123463a4b065722e99115d6c222f267d9cabb524 \
         --minimum-peers-per-subnet 0 \
+        --verbosity debug \
         --enable-debug-rpc-endpoints
 }
 function docker_start_container_beacon(){
@@ -189,10 +192,30 @@ function docker_start() {
   docker_stop $OPERATION
   case $OPERATION in
     beacon) docker_start_container_beacon;;
-    execution) docker_start_container_geth;;
+    geth) docker_start_container_geth;;
     validator) docker_start_container_validator;;
-    *) for cont in beacon execution validator; do docker_start $cont; done;;
+    *) for cont in beacon geth validator; do docker_start $cont; done;;
   esac
+}
+
+function docker_clean() {
+  echo "Cleaning docker containers $1"
+  local OPERATION=$1
+  shift
+  docker_stop $OPERATION
+  case $OPERATION in
+    beacon) rm -rf $CONSENSUS/.beacondata/*;;
+    geth) rm -rf $GETH/.gethdata/geth.ipc $GETH/.gethdata/geth/*;;
+    validator) rm -rf $CONSENSUS/.validatordata/*;;
+    *) for cont in beacon geth validator; do docker_clean $cont; done;;
+  esac
+}
+
+function docker_copy() {
+    docker run -d --name cp_bin eth_node sleep 10000
+    docker cp cp_bin:/root/eth_bootstrap/eth_bin $ETH_DIR
+    docker stop cp_bin
+    docker rm cp_bin
 }
 
 function docker_bash() {
@@ -200,19 +223,43 @@ function docker_bash() {
 }
 
 function usage(){
-    echo './l2 docker build|genesis|import|start|stop|bash|install|all'
+    echo './l2 docker build'
+    echo './l2 docker genesis geth'
+    echo './l2 docker genesis beacon'
+    echo './l2 docker genesis validator'
+    echo './l2 docker genesis'
+    echo './l2 docker import'
+    echo './l2 docker start geth'
+    echo './l2 docker start beacon'
+    echo './l2 docker start validator'
+    echo './l2 docker start'
+    echo './l2 docker stop geth'
+    echo './l2 docker stop beacon'
+    echo './l2 docker stop validator'
+    echo './l2 docker stop'
+    echo './l2 docker clean geth'
+    echo './l2 docker clean beacon'
+    echo './l2 docker clean validator'
+    echo './l2 docker clean'
+    echo './l2 docker copy'
+    echo './l2 docker bash'
+    echo './l2 docker install (build, genesis, import)'
+    echo './l2 docker all (build, genesis, import, start)'
 }
 
 docker_it(){
   echo "Docker it $1"
   local OPERATION=$1
   shift
+  docker_build # temporary
   case "$OPERATION" in
     build) docker_build;;
     genesis) docker_genesis $@;;
     import) docker_account_import;;
     stop) docker_stop $@;;
     start) docker_start $@;;
+    clean) docker_clean $@;;
+    copy) docker_copy;;
     bash) docker_bash;;
     install) docker_build; docker_genesis; docker_account_import;;
     all) docker_build; docker_genesis; docker_account_import; docker_start;;

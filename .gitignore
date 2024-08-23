@@ -1,4 +1,5 @@
 .idea
+.env
 eth_bin
 eth_node
 prysm
