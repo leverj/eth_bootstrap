@@ -1,5 +1,18 @@
 #!/usr/bin/bash
 
+function read_properties(){
+  [[ ! -f ./default.env ]] && return
+  local KEYS=$(cat ./default.env | grep -v '^#' | grep -v '^$' | sed 's/^\(.*\)=\(.*\)$/ \1/')
+  [[ -f ./default.env ]] && source ./default.env
+  [[ -f ./.env ]] && source ./.env
+  local PROPERTIES=''
+  for KEY in $KEYS; do
+    PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
+  done
+  echo "PROPERTIES $PROPERTIES"
+}
+DOCKER_ENV=$(read_properties)
+
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
@@ -127,12 +140,13 @@ function geth_start(){
     --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
     --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex \
     --datadir $GETH/.gethdata --nodiscover --syncmode full \
-    --allow-insecure-unlock --unlock "0x123463a4b065722e99115d6c222f267d9cabb524" \
+    --allow-insecure-unlock --unlock $GETH_UNLOCK \
     --password $ETH_DIR/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
   docker run -d --name geth \
+              -e $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 8551:8551 \
               -p 8545:8545 \
@@ -142,27 +156,28 @@ function docker_start_container_geth(){
 }
 function  beacon_start() {
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers 1 \
-	      --peer /ip4/51.159.143.255/tcp/13000/p2p/16Uiu2HAm3FSixygrZiZLzjBiPLDchCy6cbNPTu3P8mZgYYwqoT6t \
+        --min-sync-peers $BEACON_MIN_SYNC_PEERS \
+	      --peer $BEACON_PEER \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
         --chain-config-file $CONSENSUS/config.yml \
         --contract-deployment-block 0 \
-        --chain-id 32382 \
-        --network-id 32382 \
+        --chain-id $CHAIN_ID \
+        --network-id $NETWORK_ID \
         --rpc-host 0.0.0.0 \
         --grpc-gateway-host 0.0.0.0 \
         --execution-endpoint $GETH/.gethdata/geth.ipc \
         --accept-terms-of-use \
         --jwt-secret $ETH_DIR/jwt.hex \
-        --suggested-fee-recipient 0x123463a4b065722e99115d6c222f267d9cabb524 \
+        --suggested-fee-recipient $SUGGESTED_FEE_RECIPIENT \
         --minimum-peers-per-subnet 0 \
-        --verbosity debug \
+        --verbosity $VERBOSITY \
         --enable-debug-rpc-endpoints
 }
 function docker_start_container_beacon(){
 #fixme: set appropriate ports using -p
   docker run -d --name beacon \
+              -e $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 4000:4000 \
       	      -p 3500:3500 \
@@ -181,6 +196,7 @@ function validator_start(){
 function docker_start_container_validator(){
   #fixme: set appropriate ports using -p
   docker run -d --name validator \
+              -e $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
               eth_node ./l2 validator_start
 }
