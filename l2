@@ -1,18 +1,28 @@
 #!/usr/bin/bash
 
+function keys(){
+  local FILE=$1
+  [[ ! -f $FILE ]] && return
+  local KEYS=$(cat $FILE | grep -v '^#' | grep -v '^$' | sed 's/^\(.*\)=\(.*\)$/ \1/')
+  echo $KEYS
+}
+
 function read_properties(){
   [[ ! -f ./default.env ]] && return
-  local KEYS=$(cat ./default.env | grep -v '^#' | grep -v '^$' | sed 's/^\(.*\)=\(.*\)$/ \1/')
+  local KEYS=$(keys ./default.env)
+  if [ -f ./.env ]; then KEYS="$KEYS $(keys ./.env)"; fi
+  KEYS=$(echo $KEYS | tr ' ' '\n' | sort | uniq)
   [[ -f ./default.env ]] && source ./default.env
   [[ -f ./.env ]] && source ./.env
   local PROPERTIES=''
   for KEY in $KEYS; do
     PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
   done
-  echo "PROPERTIES $PROPERTIES"
+  echo "$PROPERTIES"
 }
-DOCKER_ENV=$(read_properties)
 
+DOCKER_ENV=$(read_properties)
+echo "DOCKER_ENV: $DOCKER_ENV"
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
@@ -146,7 +156,7 @@ function geth_start(){
 function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
   docker run -d --name geth \
-              -e $DOCKER_ENV \
+              $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 8551:8551 \
               -p 8545:8545 \
@@ -177,7 +187,7 @@ function  beacon_start() {
 function docker_start_container_beacon(){
 #fixme: set appropriate ports using -p
   docker run -d --name beacon \
-              -e $DOCKER_ENV \
+              $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
 	            -p 4000:4000 \
       	      -p 3500:3500 \
@@ -196,7 +206,7 @@ function validator_start(){
 function docker_start_container_validator(){
   #fixme: set appropriate ports using -p
   docker run -d --name validator \
-              -e $DOCKER_ENV \
+              $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
               eth_node ./l2 validator_start
 }
