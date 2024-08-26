@@ -26,7 +26,7 @@ echo "DOCKER_ENV: $DOCKER_ENV"
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
-GETH=$ETH_DIR/eth_node/geth
+EXECUTION=$ETH_DIR/eth_node/execution
 ETH_BIN=$ETH_DIR/eth_bin
 
 function docker_run_rm() {
@@ -96,20 +96,20 @@ function beacon_genesis(){
     echo "Generating beacon genesis"
     rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
     mkdir -p $CONSENSUS
-    mkdir -p $GETH
+    mkdir -p $EXECUTION
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
     cp $ETH_DIR/genesis.json .
     $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
       --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
-      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $GETH/genesis.json \
+      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
       --output-ssz $CONSENSUS/genesis.ssz
 }
 function geth_genesis(){
-    rm -rf $GETH/.gethdata
-    cd $GETH
+    rm -rf $EXECUTION/.gethdata
+    cd $EXECUTION
     rm -rf .gethdata/geth
-    $ETH_BIN/geth --datadir=$GETH/.gethdata init $GETH/genesis.json
+    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
     account_import
 }
 function docker_genesis() {
@@ -124,9 +124,9 @@ function docker_genesis() {
 }
 
 function account_import(){
-    cd $GETH
+    cd $EXECUTION
     rm -rf .gethdata/keystore
-    $ETH_BIN/geth --datadir=$GETH/.gethdata account \
+    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata account \
       import --password ../../geth_password.txt $ETH_DIR/secret.txt
 }
 function docker_account_import() {
@@ -149,8 +149,8 @@ function geth_start(){
   $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* \
     --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
     --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex \
-    --datadir $GETH/.gethdata --nodiscover --syncmode full \
-    --allow-insecure-unlock --unlock $GETH_UNLOCK \
+    --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
+    --allow-insecure-unlock --unlock $EXECUTION_UNLOCK \
     --password $ETH_DIR/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
@@ -167,7 +167,8 @@ function docker_start_container_geth(){
 function  beacon_start() {
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
         --min-sync-peers $BEACON_MIN_SYNC_PEERS \
-	      --peer $BEACON_PEER \
+				--peer $BEACON_PEER \
+      	--p2p-host-ip $P2P_HOST_IP \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
         --chain-config-file $CONSENSUS/config.yml \
@@ -176,7 +177,7 @@ function  beacon_start() {
         --network-id $NETWORK_ID \
         --rpc-host 0.0.0.0 \
         --grpc-gateway-host 0.0.0.0 \
-        --execution-endpoint $GETH/.gethdata/geth.ipc \
+        --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
         --accept-terms-of-use \
         --jwt-secret $ETH_DIR/jwt.hex \
         --suggested-fee-recipient $SUGGESTED_FEE_RECIPIENT \
@@ -189,7 +190,7 @@ function docker_start_container_beacon(){
   docker run -d --name beacon \
               $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-	            -p 4000:4000 \
+              -p 4000:4000 \
       	      -p 3500:3500 \
       	      -p 8080:8080 \
       	      -p 6060:6060 \
@@ -231,7 +232,7 @@ function docker_clean() {
   docker_stop $OPERATION
   case $OPERATION in
     beacon) rm -rf $CONSENSUS/.beacondata/*;;
-    geth) rm -rf $GETH/.gethdata/geth.ipc $GETH/.gethdata/geth/*;;
+    geth) rm -rf $EXECUTION/.gethdata/geth.ipc $EXECUTION/.gethdata/geth/*;;
     validator) rm -rf $CONSENSUS/.validatordata/*;;
     *) for cont in beacon geth validator; do docker_clean $cont; done;;
   esac
