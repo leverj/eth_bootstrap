@@ -150,7 +150,7 @@ function geth_start(){
     --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
     --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex \
     --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
-    --allow-insecure-unlock --unlock $EXECUTION_UNLOCK \
+    --allow-insecure-unlock --unlock $GETH_UNLOCK \
     --password $ETH_DIR/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
