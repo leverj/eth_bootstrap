@@ -1,4 +1,12 @@
 #!/usr/bin/bash
+# real path of the folder
+ETH_DIR=$(realpath $(dirname $0))
+CONSENSUS=$ETH_DIR/eth_node/consensus
+EXECUTION=$ETH_DIR/eth_node/execution
+ETH_BIN=$ETH_DIR/eth_bin
+
+#[[ -f ./default.env ]] && source ./default.env
+#[[ -f ./.env ]] && source ./.env
 
 function keys(){
   local FILE=$1
@@ -22,12 +30,7 @@ function read_properties(){
 }
 
 DOCKER_ENV=$(read_properties)
-echo "DOCKER_ENV: $DOCKER_ENV"
-# real path of the folder
-ETH_DIR=$(realpath $(dirname $0))
-CONSENSUS=$ETH_DIR/eth_node/consensus
-EXECUTION=$ETH_DIR/eth_node/execution
-ETH_BIN=$ETH_DIR/eth_bin
+#echo "DOCKER_ENV: $DOCKER_ENV"
 
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
@@ -99,19 +102,33 @@ function beacon_genesis(){
     mkdir -p $EXECUTION
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
-    cp $ETH_DIR/genesis.json .
+    cp $ETH_DIR/default.genesis.json ./genesis.json
     $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
       --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
       --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
       --output-ssz $CONSENSUS/genesis.ssz
 }
+
 function geth_genesis(){
     rm -rf $EXECUTION/.gethdata
     cd $EXECUTION
-    rm -rf .gethdata/geth
     $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
     account_import
 }
+function bootstrap_genesis(){
+    beacon_genesis
+    geth_genesis
+}
+function node_genesis() {
+    rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
+    mkdir -p $CONSENSUS
+    mkdir -p $EXECUTION
+    cp $ETH_DIR/config.yml $CONSENSUS/
+    cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
+    cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
+    geth_genesis
+}
+
 function docker_genesis() {
   echo "Running genesis for $1"
   local OPERATION=$1
@@ -119,6 +136,12 @@ function docker_genesis() {
   case $OPERATION in
     beacon) docker_run_rm beacon_genesis;;
     geth) docker_run_rm geth_genesis;;
+    bootstrap)
+      docker_run_rm bootstrap_genesis
+      cp $CONSENSUS/genesis.ssz $ETH_DIR/current.genesis.ssz
+      cp $EXECUTION/genesis.json $ETH_DIR/current.genesis.json
+      ;;
+    node) docker_run_rm node_genesis;;
     *) for cont in beacon geth; do docker_genesis $cont; done;;
   esac
 }
@@ -164,10 +187,15 @@ function docker_start_container_geth(){
               -p 9001:9001 \
               eth_node ./l2 geth_start
 }
+
+function beacon_peer(){
+  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
+  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
+}
 function  beacon_start() {
+  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers $BEACON_MIN_SYNC_PEERS \
-				--peer $BEACON_PEER \
+        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
       	--p2p-host-ip $P2P_HOST_IP \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
@@ -299,6 +327,8 @@ shift
 case "${OPERATION}" in
 beacon_genesis) beacon_genesis;;
 geth_genesis) geth_genesis;;
+bootstrap_genesis) bootstrap_genesis;;
+node_genesis) node_genesis;;
 import) account_import ;;
 geth_start) geth_start;;
 beacon_start) beacon_start;;
@@ -311,5 +341,4 @@ new_mnemonic) new_mnemonic;;
 balance) get_balance "$@";;
 *) usage ;;
 esac
-#test
 
