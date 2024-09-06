@@ -61,12 +61,26 @@ function stop_it(){
     rm -f beacon_scan.log
 }
 
+function docker_it() {
+    cd $SCAN_DIR
+    get_light_chain
+    cd $SCAN_DIR/light-beaconchain-explorer
+    cp ../gluon.chain.yml config/
+    docker build -t beacon-scan .
+    docker stop beacon-scan
+    docker rm beacon-scan
+    local CHAIN_GENESIS_TIMESTAMP=$(cat ../../current.genesis.json | jq -r .config.shanghaiTime)
+    local DOCKER_ENV="-e LOGGING_OUTPUT_LEVEL=debug -e FRONTEND_SERVER_PORT=8888 -e FRONTEND_SERVER_HOST=0.0.0.0 -e CHAIN_NAME=gluon -e CHAIN_DISPLAY_NAME=Gluon -e CHAIN_GENESIS_TIMESTAMP=$CHAIN_GENESIS_TIMESTAMP -e CHAIN_CONFIG_PATH=/app/config/gluon.chain.yml -e BEACONAPI_ENDPOINT=http://172.17.0.1:3500 -e DATABASE_ENGINE=sqlite -e DATABASE_SQLITE_FILE=/app/beacon-data/explorer-db.sqlite"
+    docker run -d --name beacon-scan $DOCKER_ENV -p 8888:8888 -v $SCAN_DIR/beacon-data:/app/beacon-data beacon-scan
+}
+
 OPERATION=$1
 shift
 case $OPERATION in
   build) build_it ;;
   start) start_it;;
   stop) stop_it;;
+  docker) docker_it;;
   *) echo "Usage: $0 {cp|start}"
     exit 1
 esac
