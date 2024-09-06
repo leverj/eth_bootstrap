@@ -1,25 +1,36 @@
-# Holesky config
+# Mainnet config
 
 # Extends the mainnet preset
-PRESET_BASE: "mainnet"
+PRESET_BASE: 'mainnet'
 
 # Free-form short name of the network that this configuration applies to - known
 # canonical network names include:
 # * 'mainnet' - there can be only one
 # * 'prater' - testnet
 # Must match the regex: [a-z0-9\-]
-CONFIG_NAME: "holesky"
+CONFIG_NAME: 'gluon'
+
+# Transition
+# ---------------------------------------------------------------
+# Estimated on Sept 15, 2022
+TERMINAL_TOTAL_DIFFICULTY: 58750000000000000000000
+# By default, don't use these params
+TERMINAL_BLOCK_HASH: 0x0000000000000000000000000000000000000000000000000000000000000000
+TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 18446744073709551615
+
+
 
 # Genesis
 # ---------------------------------------------------------------
 # `2**14` (= 16,384)
 MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: 16384
-# Sep-28-2023 11:55:00 +UTC
-MIN_GENESIS_TIME: 1695902100
+# Dec 1, 2020, 12pm UTC
+MIN_GENESIS_TIME: 1724768692
 # Mainnet initial fork version, recommend altering for testnets
-GENESIS_FORK_VERSION: 0x01017000
-# Genesis delay 5 mins
-GENESIS_DELAY: 300
+GENESIS_FORK_VERSION: 0x20000089
+# 604800 seconds (7 days)
+GENESIS_DELAY: 604800
+
 
 # Forking
 # ---------------------------------------------------------------
@@ -28,20 +39,27 @@ GENESIS_DELAY: 300
 #  - Temporarily set to max uint64 value: 2**64 - 1
 
 # Altair
-ALTAIR_FORK_VERSION: 0x02017000
-ALTAIR_FORK_EPOCH: 0
-# Merge
-BELLATRIX_FORK_VERSION: 0x03017000
-BELLATRIX_FORK_EPOCH: 0
-TERMINAL_TOTAL_DIFFICULTY: 0
-TERMINAL_BLOCK_HASH: 0x0000000000000000000000000000000000000000000000000000000000000000
-TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 18446744073709551615
+ALTAIR_FORK_VERSION: 0x01000000
+ALTAIR_FORK_EPOCH: 74240  # Oct 27, 2021, 10:56:23am UTC
+# Bellatrix
+BELLATRIX_FORK_VERSION: 0x02000000
+BELLATRIX_FORK_EPOCH: 144896  # Sept 6, 2022, 11:34:47am UTC
 # Capella
-CAPELLA_FORK_VERSION: 0x04017000
-CAPELLA_FORK_EPOCH: 256
+CAPELLA_FORK_VERSION: 0x03000000
+CAPELLA_FORK_EPOCH: 194048  # April 12, 2023, 10:27:35pm UTC
 # Deneb
-DENEB_FORK_VERSION: 0x40017000
+DENEB_FORK_VERSION: 0x04000000
 DENEB_FORK_EPOCH: 18446744073709551615
+# EIP6110
+EIP6110_FORK_VERSION: 0x05000000  # temporary stub
+EIP6110_FORK_EPOCH: 18446744073709551615
+# EIP7002
+EIP7002_FORK_VERSION: 0x05000000  # temporary stub
+EIP7002_FORK_EPOCH: 18446744073709551615
+# WHISK
+WHISK_FORK_VERSION: 0x06000000  # temporary stub
+WHISK_FORK_EPOCH: 18446744073709551615
+
 
 # Time parameters
 # ---------------------------------------------------------------
@@ -56,18 +74,20 @@ SHARD_COMMITTEE_PERIOD: 256
 # 2**11 (= 2,048) Eth1 blocks ~8 hours
 ETH1_FOLLOW_DISTANCE: 2048
 
+
 # Validator cycle
 # ---------------------------------------------------------------
 # 2**2 (= 4)
 INACTIVITY_SCORE_BIAS: 4
 # 2**4 (= 16)
 INACTIVITY_SCORE_RECOVERY_RATE: 16
-# 28,000,000,000 Gwei to ensure quicker ejection
-EJECTION_BALANCE: 28000000000
+# 2**4 * 10**9 (= 16,000,000,000) Gwei
+EJECTION_BALANCE: 16000000000
 # 2**2 (= 4)
 MIN_PER_EPOCH_CHURN_LIMIT: 4
 # 2**16 (= 65,536)
 CHURN_LIMIT_QUOTIENT: 65536
+
 
 # Fork choice
 # ---------------------------------------------------------------
@@ -76,17 +96,11 @@ PROPOSER_SCORE_BOOST: 40
 
 # Deposit contract
 # ---------------------------------------------------------------
-# Ethereum
-DEPOSIT_CHAIN_ID: 17000
-DEPOSIT_NETWORK_ID: 17000
-DEPOSIT_CONTRACT_ADDRESS: 0x4242424242424242424242424242424242424242
+# Ethereum PoW Mainnet
+DEPOSIT_CHAIN_ID: 1
+DEPOSIT_NETWORK_ID: 1
+DEPOSIT_CONTRACT_ADDRESS: 0x00000000219ab540356cBB839Cbe05303d7705Fa
 
-# Sync committee
-# ---------------------------------------------------------------
-# 2**9 (= 512)
-SYNC_COMMITTEE_SIZE: 512
-# 2**8 (= 256)
-EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 256
 
 # Networking
 # ---------------------------------------------------------------
@@ -126,24 +140,3 @@ MAX_REQUEST_BLOB_SIDECARS: 768
 MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS: 4096
 # `6`
 BLOB_SIDECAR_SUBNET_COUNT: 6
-# `uint64(6)`
-MAX_BLOBS_PER_BLOCK: 6
-
-# Time parameters
-# ---------------------------------------------------------------
-# 2**0 (= 1) slots 12 seconds
-MIN_ATTESTATION_INCLUSION_DELAY: 1
-# 2**5 (= 32) slots 6.4 minutes
-SLOTS_PER_EPOCH: 32
-# 2**0 (= 1) epochs 6.4 minutes
-MIN_SEED_LOOKAHEAD: 1
-# 2**2 (= 4) epochs 25.6 minutes
-MAX_SEED_LOOKAHEAD: 4
-# 2**6 (= 64) epochs ~6.8 hours
-EPOCHS_PER_ETH1_VOTING_PERIOD: 64
-# 2**13 (= 8,192) slots ~27 hours
-SLOTS_PER_HISTORICAL_ROOT: 8192
-# 2**2 (= 4) epochs 25.6 minutes
-MIN_EPOCHS_TO_INACTIVITY_PENALTY: 4
-
-MAX_WITHDRAWALS_PER_PAYLOAD: 16
