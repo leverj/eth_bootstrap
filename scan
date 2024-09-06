@@ -83,10 +83,16 @@ function docker_it() {
       build) docker_build_it ;;
       start) docker_start_it;;
       stop) docker_stop_it;;
-      *) echo "Usage: $0 docker {build|start|stop}"
-        exit 1
+      *) usage;;
     esac
 }
+
+function usage() {
+  echo "$0 {build|start|stop|docker}"
+  echo "$0 docker {build|start|stop}"
+  exit 1
+}
+
 OPERATION=$1
 shift
 case $OPERATION in
@@ -94,6 +100,5 @@ case $OPERATION in
   start) start_it;;
   stop) stop_it;;
   docker) docker_it $@;;
-  *) echo "Usage: $0 {build|start|stop|docker}"
-    exit 1
+  *) usage;;
 esac
