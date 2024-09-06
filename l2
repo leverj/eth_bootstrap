@@ -279,30 +279,16 @@ function docker_bash() {
 
 function usage(){
     echo './l2 docker build'
-    echo './l2 docker genesis geth'
-    echo './l2 docker genesis beacon'
-    echo './l2 docker genesis validator'
-    echo './l2 docker genesis'
+    echo './l2 docker genesis [geth|beacon|bootstrap|node]'
     echo './l2 docker import'
-    echo './l2 docker start geth'
-    echo './l2 docker start beacon'
-    echo './l2 docker start validator'
-    echo './l2 docker start'
-    echo './l2 docker stop geth'
-    echo './l2 docker stop beacon'
-    echo './l2 docker stop validator'
-    echo './l2 docker stop'
-    echo './l2 docker clean geth'
-    echo './l2 docker clean beacon'
-    echo './l2 docker clean validator'
-    echo './l2 docker clean'
+    echo './l2 docker start [geth|beacon|validator]'
+    echo './l2 docker stop [geth|beacon|validator]'
+    echo './l2 docker clean [geth|beacon|validator]'
     echo './l2 docker copy'
     echo './l2 docker bash'
-    echo './l2 docker install (build, genesis, import)'
-    echo './l2 docker all (build, genesis, import, start)'
 }
 
-docker_it(){
+function docker_it(){
   echo "Docker it $1"
   local OPERATION=$1
   shift
@@ -316,8 +302,6 @@ docker_it(){
     clean) docker_clean $@;;
     copy) docker_copy;;
     bash) docker_bash;;
-    install) docker_build; docker_genesis; docker_account_import;;
-    all) docker_build; docker_genesis; docker_account_import; docker_start;;
     *) usage;;
   esac
 }
@@ -334,6 +318,7 @@ geth_start) geth_start;;
 beacon_start) beacon_start;;
 validator_start) validator_start;;
 docker) docker_it $@;;
+scan) beacon_scan;;
 
 verify) verify_chain "$@";;
 deposit_cli) deposit_cli;;
