@@ -4,3 +4,4 @@ eth_bin
 eth_node
 prysm
 validator_keys
+beaconscan/light-beaconchain-explorer
