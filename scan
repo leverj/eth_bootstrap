@@ -58,6 +58,17 @@ function docker_build_it() {
     cd $ETH_DIR
     get_light_chain
     cd $ETH_DIR/light-beaconchain-explorer
+    local KEY=SLOTS_PER_EPOCH
+    local FILE=../gluon.chain.yml
+    # read SLOTS_PER_EPOCH from config.yml and update gluon.chain.yml
+    local VALUE=$(grep $KEY ../config.yml | awk '{print $2}')
+    sed -i -e "s/.*$KEY.*/$KEY: $VALUE/" ${FILE}
+    local EXISTS=$(grep ${KEY} ${FILE})
+    echo EXISTS=$EXISTS
+    if [[ -z "$EXISTS" ]]; then
+      echo "adding ${KEY}: ${VALUE} to ${FILE}"
+      echo ${KEY}: ${VALUE} >>${FILE}
+    fi
     cp ../gluon.chain.yml config/
     docker build -t beacon-scan .
 }
@@ -66,7 +77,16 @@ function docker_start_it(){
     docker_stop_it
     cd $ETH_DIR
     local CHAIN_GENESIS_TIMESTAMP=$(cat current.genesis.json | jq -r .config.shanghaiTime)
-    local DOCKER_ENV="-e LOGGING_OUTPUT_LEVEL=debug -e FRONTEND_SERVER_PORT=8888 -e FRONTEND_SERVER_HOST=0.0.0.0 -e CHAIN_NAME=gluon -e CHAIN_DISPLAY_NAME=Gluon -e CHAIN_GENESIS_TIMESTAMP=$CHAIN_GENESIS_TIMESTAMP -e CHAIN_CONFIG_PATH=/app/config/gluon.chain.yml -e BEACONAPI_ENDPOINT=http://172.17.0.1:3500 -e DATABASE_ENGINE=sqlite -e DATABASE_SQLITE_FILE=/app/beacon-data/explorer-db.sqlite"
+    local DOCKER_ENV="-e LOGGING_OUTPUT_LEVEL=debug"
+    DOCKER_ENV="$DOCKER_ENV -e FRONTEND_SERVER_PORT=8888"
+    DOCKER_ENV="$DOCKER_ENV -e FRONTEND_SERVER_HOST=0.0.0.0"
+    DOCKER_ENV="$DOCKER_ENV -e CHAIN_NAME=gluon"
+    DOCKER_ENV="$DOCKER_ENV -e CHAIN_DISPLAY_NAME=Gluon"
+    DOCKER_ENV="$DOCKER_ENV -e CHAIN_GENESIS_TIMESTAMP=$CHAIN_GENESIS_TIMESTAMP"
+    DOCKER_ENV="$DOCKER_ENV -e CHAIN_CONFIG_PATH=/app/config/gluon.chain.yml "
+    DOCKER_ENV="$DOCKER_ENV -e BEACONAPI_ENDPOINT=http://172.17.0.1:3500"
+    DOCKER_ENV="$DOCKER_ENV -e DATABASE_ENGINE=sqlite"
+    DOCKER_ENV="$DOCKER_ENV -e DATABASE_SQLITE_FILE=/app/beacon-data/explorer-db.sqlite"
     docker run -d --name beacon-scan $DOCKER_ENV -p 8888:8888 -v $ETH_DIR/beacon-data:/app/beacon-data beacon-scan
 }
 

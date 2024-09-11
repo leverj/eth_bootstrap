@@ -134,15 +134,13 @@ function docker_genesis() {
   local OPERATION=$1
   shift
   case $OPERATION in
-    beacon) docker_run_rm beacon_genesis;;
-    geth) docker_run_rm geth_genesis;;
     bootstrap)
       docker_run_rm bootstrap_genesis
       cp $CONSENSUS/genesis.ssz $ETH_DIR/current.genesis.ssz
       cp $EXECUTION/genesis.json $ETH_DIR/current.genesis.json
       ;;
     node) docker_run_rm node_genesis;;
-    *) for cont in beacon geth; do docker_genesis $cont; done;;
+    *) usage;;
   esac
 }
 
@@ -279,7 +277,7 @@ function docker_bash() {
 
 function usage(){
     echo './l2 docker build'
-    echo './l2 docker genesis [geth|beacon|bootstrap|node]'
+    echo './l2 docker genesis bootstrap|node'
     echo './l2 docker import'
     echo './l2 docker start [geth|beacon|validator]'
     echo './l2 docker stop [geth|beacon|validator]'
