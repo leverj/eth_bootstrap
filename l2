@@ -275,6 +275,21 @@ function docker_bash() {
   docker run -it --rm -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node eth_node bash
 }
 
+function start_explorer(){
+  stop_explorer
+  cd $ETH_DIR/explorer
+  mkdir -p .volumes
+  cp -r lite_explorer memento .volumes/
+  docker-compose -f docker-compose-explorer.yml up -d --build
+}
+
+function stop_explorer(){
+  for _container in memento-lite-explorer memento memento-postgres memento-redis; do
+    docker stop $_container
+    docker rm $_container
+  done
+}
+
 function usage(){
     echo './l2 docker build'
     echo './l2 docker genesis bootstrap|node'
@@ -284,6 +299,7 @@ function usage(){
     echo './l2 docker clean [geth|beacon|validator]'
     echo './l2 docker copy'
     echo './l2 docker bash'
+    echo './l2 explorer start|stop'
 }
 
 function docker_it(){
@@ -304,6 +320,19 @@ function docker_it(){
   esac
 }
 
+function lite_explorer(){
+  echo "Running lite explorer $1"
+  local OPERATION=$1
+  shift
+  case $OPERATION in
+    start) start_explorer;;
+    stop) stop_explorer;;
+    *) usage;;
+  esac
+}
+
+
+
 OPERATION=$1
 shift
 case "${OPERATION}" in
@@ -317,6 +346,10 @@ beacon_start) beacon_start;;
 validator_start) validator_start;;
 docker) docker_it $@;;
 scan) beacon_scan;;
+
+explorer) lite_explorer $@;;
+
+
 
 verify) verify_chain "$@";;
 deposit_cli) deposit_cli;;
