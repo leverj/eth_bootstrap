@@ -279,6 +279,7 @@ function start_explorer(){
   stop_explorer
   cd $ETH_DIR/explorer
   mkdir -p .volumes
+  rm -rf .volumes/lite-explorer .volumes/memento
   cp -r lite-explorer memento .volumes/
   docker-compose -f docker-compose-explorer.yml up -d --build
 }

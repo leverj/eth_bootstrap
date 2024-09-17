@@ -44,7 +44,7 @@ eth:
     # Websockets endpoint of JSON-RPC enabled node (optional)
     # if this is present, the task manager will use a newHeads subscription to watch for new blocks
     # if not present, the task manager will use polling to get the highest block
-    #    ws: "ws://localhost:8546"
+    #ws: "ws://localhost:8546"
 
     # The interval at which the task manager will poll the node for best block (default:"15s")
     # optional, only used if `ws` url is not specified
@@ -55,7 +55,7 @@ feature:
   # Backfilling
   backfill:
     # Enable/disable the backfilling feature
-    enabled: false
+    enabled: true
 
   # Lag feature
   lag:
@@ -76,7 +76,7 @@ feature:
     enabled: true
 
 # Control what to be logged using format "module=level,module=level"; `*` means all other modules
-logging: "*=info"
+logging: "*=debug"
 
 # redis-related fields
 redis:
@@ -85,4 +85,5 @@ redis:
 
   # The name of the redis list the scraper will use for task management (default: "todo")
   list: "todo"
+
 

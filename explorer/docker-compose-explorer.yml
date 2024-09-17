@@ -4,7 +4,7 @@ services:
     container_name: memento-redis
     image: redis:5.0.5-alpine
     restart: always
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - .volumes/redis:/data
   postgres:
@@ -25,8 +25,8 @@ services:
       - redis
       - postgres
     ports:
-      - 127.0.0.1:3001:3001
-      - 127.0.0.1:3000:3000
+      - 0.0.0.0:3001:3001
+      - 0.0.0.0:3000:3000
     environment:
       - PG_PASSWORD=password
     volumes:
@@ -40,4 +40,4 @@ services:
     ports:
       - 0.0.0.0:8085:80
     volumes:
-      - .volumes/lite-explorer:/usr/share/nginx/html
+      - .volumes/lite-explorer/config.json:/usr/share/nginx/html/config.json
