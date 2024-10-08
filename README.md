@@ -38,5 +38,5 @@ $ ./scan docker stop
 ```
 
 
-    $ ./2 explorer start
+    $ ./l2 explorer start
 ```

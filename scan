@@ -48,15 +48,18 @@ function start_it(){
 function stop_it(){
     cd $ETH_DIR/light-beaconchain-explorer
     echo stop
-    kill `cat beacon_scan.pid`
-    rm beacon_scan.pid
+    # if pid file exists, kill the process
+    if [ -f beacon_scan.pid ] then
+        kill `cat beacon_scan.pid`
+        rm beacon_scan.pid
+    fi
     rm -f explorer-db.sqlite*
     rm -f beacon_scan.log
 }
 
 function docker_build_it() {
     cd $ETH_DIR
-    get_light_chain
+#    get_light_chain
     cd $ETH_DIR/light-beaconchain-explorer
     local KEY=SLOTS_PER_EPOCH
     local FILE=../gluon.chain.yml
@@ -95,6 +98,11 @@ function docker_stop_it(){
     docker rm beacon-scan
 }
 
+function clean_it(){
+    stop_it
+    rm -rf $ETH_DIR/beacon-data
+}
+
 function docker_it() {
     echo "docker_it $1"
     local OPERATION=$1
@@ -103,6 +111,7 @@ function docker_it() {
       build) docker_build_it ;;
       start) docker_start_it;;
       stop) docker_stop_it;;
+      clean) clean_it;;
       *) usage;;
     esac
 }

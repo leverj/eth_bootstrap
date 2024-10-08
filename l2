@@ -95,11 +95,16 @@ function docker_build() {
   docker build -t eth_node .
 }
 
+function create_eth_node_directory(){
+  rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
+  mkdir -p $CONSENSUS
+  mkdir -p $EXECUTION
+  cp $ETH_DIR/{geth_password.txt,jwt.hex,secret.txt} $ETH_DIR/eth_node/
+}
+
 function beacon_genesis(){
     echo "Generating beacon genesis"
-    rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
-    mkdir -p $CONSENSUS
-    mkdir -p $EXECUTION
+    create_eth_node_directory
     cd $CONSENSUS
     cp $ETH_DIR/config.yml .
     cp $ETH_DIR/default.genesis.json ./genesis.json
@@ -120,9 +125,7 @@ function bootstrap_genesis(){
     geth_genesis
 }
 function node_genesis() {
-    rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
-    mkdir -p $CONSENSUS
-    mkdir -p $EXECUTION
+    create_eth_node_directory
     cp $ETH_DIR/config.yml $CONSENSUS/
     cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
     cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
@@ -148,7 +151,7 @@ function account_import(){
     cd $EXECUTION
     rm -rf .gethdata/keystore
     $ETH_BIN/geth --datadir=$EXECUTION/.gethdata account \
-      import --password ../../geth_password.txt $ETH_DIR/secret.txt
+      import --password $ETH_DIR/eth_node/geth_password.txt $ETH_DIR/eth_node/secret.txt
 }
 function docker_account_import() {
   docker_run_rm import
@@ -169,10 +172,10 @@ function docker_stop() {
 function geth_start(){
   $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* \
     --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
-    --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/jwt.hex \
+    --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/eth_node/jwt.hex \
     --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
     --allow-insecure-unlock --unlock $GETH_UNLOCK \
-    --password $ETH_DIR/geth_password.txt --authrpc.port 8551
+    --password $ETH_DIR/eth_node/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
  #fixme: set appropriate ports using -p
@@ -205,7 +208,7 @@ function  beacon_start() {
         --grpc-gateway-host 0.0.0.0 \
         --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
         --accept-terms-of-use \
-        --jwt-secret $ETH_DIR/jwt.hex \
+        --jwt-secret $ETH_DIR/eth_node/jwt.hex \
         --suggested-fee-recipient $SUGGESTED_FEE_RECIPIENT \
         --minimum-peers-per-subnet 0 \
         --verbosity $VERBOSITY \

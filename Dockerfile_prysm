@@ -1,0 +1,4 @@
+FROM golang:1.22.0-bookworm
+RUN apt-get update && apt-get install -y jq
+COPY prysm-debug.sh /root/eth_bootstrap/
+WORKDIR /root/eth_bootstrap
