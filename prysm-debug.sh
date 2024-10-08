@@ -43,9 +43,13 @@ function install_it() {
     git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
   fi
   cd prysm
-  CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/beacon-chain ./cmd/beacon-chain
-  CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/validator ./cmd/validator
   CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/prysmctl ./cmd/prysmctl
+  case "$1" in
+    beacon) CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/beacon-chain ./cmd/beacon-chain ;;
+    validator) CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/validator ./cmd/validator ;;
+    *) CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/beacon-chain ./cmd/beacon-chain
+       CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/validator ./cmd/validator ;;
+  esac
 }
 
 function beacon_peer(){
@@ -54,7 +58,7 @@ function beacon_peer(){
 }
 
 function docker_beacon() {
-  install_it
+  install_it beacn
   [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
   $PRYSM_DEBUG/beacon-chain --datadir $CONSENSUS/.beacondata \
     --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
@@ -94,7 +98,7 @@ function run_beacon() {
 }
 
 function docker_validator() {
-  install_it
+  install_it validator
   $PRYSM_DEBUG/validator --datadir $CONSENSUS/.validatordata \
       --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml \
       --beacon-rpc-provider=172.17.0.1:4000
