@@ -58,7 +58,7 @@ function beacon_peer(){
 }
 
 function docker_beacon() {
-  install_it beacn
+  install_it beacon
   [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
   $PRYSM_DEBUG/beacon-chain --datadir $CONSENSUS/.beacondata \
     --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
