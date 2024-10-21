@@ -4,9 +4,8 @@ ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
 EXECUTION=$ETH_DIR/eth_node/execution
 ETH_BIN=$ETH_DIR/eth_bin
-
-#[[ -f ./default.env ]] && source ./default.env
-#[[ -f ./.env ]] && source ./.env
+[[ -f ./default.env ]] && source ./default.env
+[[ -f ./.env ]] && source ./.env
 
 function keys(){
   local FILE=$1
@@ -20,8 +19,6 @@ function read_properties(){
   local KEYS=$(keys ./default.env)
   if [ -f ./.env ]; then KEYS="$KEYS $(keys ./.env)"; fi
   KEYS=$(echo $KEYS | tr ' ' '\n' | sort | uniq)
-  [[ -f ./default.env ]] && source ./default.env
-  [[ -f ./.env ]] && source ./.env
   local PROPERTIES=''
   for KEY in $KEYS; do
     PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
@@ -85,9 +82,15 @@ function transfer(){
 
 function get_balance(){
   local ADDRESS=$1
-  curl --silent -X POST -H "Content-Type: application/json"  \
+  echo localhost balance $ADDRESS $(curl --silent -X POST -H "Content-Type: application/json"  \
        --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$ADDRESS\", \"latest\"],\"id\":1}" \
-        http://localhost:8545 | jq --raw-output '.result' | perl -lane 'print hex($F[0])'
+        http://localhost:8545 | jq --raw-output '.result'| perl -lane 'print hex($F[0])')
+  # if $GENESIS_BEACON_IP exists then use it
+  if [ -n "$GENESIS_BEACON_IP" ]; then
+    echo genesis balance $ADDRESS $(curl --silent -X POST -H "Content-Type: application/json"  \
+         --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$ADDRESS\", \"latest\"],\"id\":1}" \
+          http://$GENESIS_BEACON_IP:8545 | jq --raw-output '.result' | perl -lane 'print hex($F[0])')
+  fi
 }
 
 function docker_build() {

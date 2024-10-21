@@ -128,7 +128,7 @@ function run_it(){
 OPERATION=$1
 shift
 case "$OPERATION" in
-  run) run_it $@ ;;
+  start) run_it $@ ;;
   docker_validator) docker_validator $@ ;;
   docker_beacon) docker_beacon $@ ;;
   *) echo "Usage: $0 {run validator|beacon}"; exit 1 ;;

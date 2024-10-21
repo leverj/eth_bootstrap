@@ -40,3 +40,10 @@ $ ./scan docker stop
 
     $ ./l2 explorer start
 ```
+
+
+# debug mode
+```
+$ ./prysm-debug.sh start beacon
+$ ./prysm-debug.sh start validator
+```
