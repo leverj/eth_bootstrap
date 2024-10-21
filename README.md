@@ -36,11 +36,8 @@ $ ./scan docker stop
 
 # start etherscan
 ```
-
-
-    $ ./l2 explorer start
+ $ ./l2 explorer start
 ```
-
 
 # debug mode
 ```

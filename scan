@@ -49,7 +49,7 @@ function stop_it(){
     cd $ETH_DIR/light-beaconchain-explorer
     echo stop
     # if pid file exists, kill the process
-    if [ -f beacon_scan.pid ] then
+    if [[ -f beacon_scan.pid ]]; then
         kill `cat beacon_scan.pid`
         rm beacon_scan.pid
     fi
