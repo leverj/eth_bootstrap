@@ -40,6 +40,8 @@ function install_it() {
   cd $PRYSM_DEBUG
   # if prysm does not exist, clone it
   if [ ! -d prysm ]; then
+#    original codebase
+#    git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
     git clone --branch workaround-hack  https://github.com/leverj/prysm.git
   fi
   cd prysm
