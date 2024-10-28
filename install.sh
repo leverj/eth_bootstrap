@@ -20,7 +20,9 @@ function get_geth(){
 
 function create_prysm(){
     cd $ETH_DIR
-    git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
+#    original codebase
+#    git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
+    git clone --branch workaround-hack https://github.com/leverj/prysm.git
     cd prysm
     CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$ETH_BIN/beacon-chain ./cmd/beacon-chain
     CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$ETH_BIN/validator ./cmd/validator
