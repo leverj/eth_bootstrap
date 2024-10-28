@@ -40,7 +40,7 @@ function install_it() {
   cd $PRYSM_DEBUG
   # if prysm does not exist, clone it
   if [ ! -d prysm ]; then
-    git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
+    git clone --branch workaround-hack  https://github.com/leverj/prysm.git
   fi
   cd prysm
   CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go build -o=$PRYSM_DEBUG/prysmctl ./cmd/prysmctl
