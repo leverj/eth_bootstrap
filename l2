@@ -62,8 +62,8 @@ function verify_chain(){
   local DEPOSIT_ACCOUNT=$1
   echo "Balance: $IMPORTED_ACCOUNT $(get_balance $IMPORTED_ACCOUNT)"
   echo "Balance: $DEPOSIT_ACCOUNT $(get_balance $DEPOSIT_ACCOUNT)"
-  echo "Transfering 1 ETH from $IMPORTED_ACCOUNT to $DEPOSIT_ACCOUNT"
-  transfer $IMPORTED_ACCOUNT $DEPOSIT_ACCOUNT 0x$(echo "obase=16; 5000000000000000000000" | bc)
+  echo "Transfering 500 ETH from $IMPORTED_ACCOUNT to $DEPOSIT_ACCOUNT"
+  transfer $IMPORTED_ACCOUNT $DEPOSIT_ACCOUNT 0x$(echo "obase=16; 500000000000000000000" | bc)
   sleep 10
   echo "Balance: $IMPORTED_ACCOUNT $(get_balance $IMPORTED_ACCOUNT)"
   echo "Balance: $DEPOSIT_ACCOUNT $(get_balance $DEPOSIT_ACCOUNT)"
