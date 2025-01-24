@@ -60,7 +60,7 @@ function beacon_peer(){
 }
 
 function docker_beacon() {
-  install_it beacon
+  time install_it beacon
   [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
   $PRYSM_DEBUG/beacon-chain --datadir $CONSENSUS/.beacondata \
     --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
@@ -89,6 +89,7 @@ function run_beacon() {
     $DOCKER_ENV \
     -v $PRYSM_DEBUG:/root/eth_bootstrap/prysm-debug \
     -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
+    -v $PRYSM_DEBUG/go/pkg:/go/pkg \
     -p 4000:4000 \
     -p 3500:3500 \
     -p 8080:8080 \
