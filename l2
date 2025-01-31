@@ -178,6 +178,7 @@ function geth_start(){
     --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/eth_node/jwt.hex \
     --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
     --allow-insecure-unlock --unlock $GETH_UNLOCK \
+    --verbosity $GETH_VERBOSITY \
     --password $ETH_DIR/eth_node/geth_password.txt --authrpc.port 8551
 }
 function docker_start_container_geth(){
