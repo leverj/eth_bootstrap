@@ -89,7 +89,6 @@ function run_beacon() {
     $DOCKER_ENV \
     -v $PRYSM_DEBUG:/root/eth_bootstrap/prysm-debug \
     -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-    -v $PRYSM_DEBUG/go/pkg:/go/pkg \
     -p 4000:4000 \
     -p 3500:3500 \
     -p 8080:8080 \

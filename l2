@@ -59,7 +59,7 @@ function new_mnemonic(){
 
 function verify_chain(){
   local IMPORTED_ACCOUNT=0x123463a4b065722e99115d6c222f267d9cabb524
-  local DEPOSIT_ACCOUNT=$1
+  local DEPOSIT_ACCOUNT=${1:-"0x52d48F0c33BD8986b5848d6aA847247176882750"}
   echo "Balance: $IMPORTED_ACCOUNT $(get_balance $IMPORTED_ACCOUNT)"
   echo "Balance: $DEPOSIT_ACCOUNT $(get_balance $DEPOSIT_ACCOUNT)"
   echo "Transfering 500 ETH from $IMPORTED_ACCOUNT to $DEPOSIT_ACCOUNT"
@@ -81,7 +81,7 @@ function transfer(){
 }
 
 function get_balance(){
-  local ADDRESS=$1
+  local ADDRESS=${1:-"0x52d48F0c33BD8986b5848d6aA847247176882750"}
   echo localhost balance $ADDRESS $(curl --silent -X POST -H "Content-Type: application/json"  \
        --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"$ADDRESS\", \"latest\"],\"id\":1}" \
         http://localhost:8545 | jq --raw-output '.result'| perl -lane 'print hex($F[0])')
