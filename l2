@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+
+#!/usr/bin/env bash
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
@@ -284,18 +286,17 @@ function docker_bash() {
 
 function start_explorer(){
   stop_explorer
-  cd $ETH_DIR/explorer
-  mkdir -p .volumes
-  rm -rf .volumes/lite-explorer .volumes/memento
-  cp -r lite-explorer memento .volumes/
-  docker-compose -f docker-compose-explorer.yml up -d --build
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  up -d
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  rm -f
 }
 
 function stop_explorer(){
-  for _container in memento-lite-explorer memento memento-postgres memento-redis; do
-    docker stop $_container
-    docker rm $_container
-  done
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  rm -sfv
+}
+
+function clean_explorer(){
+  stop_explorer
+  rm -rf $ETH_DIR/blockscout/volumes/*
 }
 
 function usage(){
@@ -307,7 +308,7 @@ function usage(){
     echo './l2 docker clean [geth|beacon|validator]'
     echo './l2 docker copy'
     echo './l2 docker bash'
-    echo './l2 explorer start|stop'
+    echo './l2 explorer start|stop|clean'
 }
 
 function docker_it(){
@@ -328,13 +329,14 @@ function docker_it(){
   esac
 }
 
-function lite_explorer(){
-  echo "Running lite explorer $1"
+function explorer(){
+  echo "Running blockscout explorer $1"
   local OPERATION=$1
   shift
   case $OPERATION in
     start) start_explorer;;
     stop) stop_explorer;;
+    clean) clean_explorer;;
     *) usage;;
   esac
 }
@@ -355,7 +357,7 @@ validator_start) validator_start;;
 docker) docker_it $@;;
 scan) beacon_scan;;
 
-explorer) lite_explorer $@;;
+explorer) explorer $@;;
 
 
 

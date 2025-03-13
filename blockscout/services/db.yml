@@ -22,11 +22,8 @@ services:
         POSTGRES_DB: 'blockscout'
         POSTGRES_USER: 'blockscout'
         POSTGRES_PASSWORD: 'ceWb1MeLBEeOIfk65gU8EjF8'
-#    expose:
-#      - 5432
-    ports:
-      - target: 5432
-        published: 7432
+    expose:
+      - 5432
     volumes:
       - ../volumes/blockscout-db-data:/var/lib/postgresql/data
     healthcheck:
