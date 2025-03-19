@@ -1,0 +1,19 @@
+# Javascript Node CircleCI 2.1 configuration file
+#
+# Check https://circleci.com/docs/2.1/language-javascript/ for more details
+#
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run: docker info
+      - run: docker build -t leverj/layer2:$CIRCLE_BRANCH . -f ./Dockerfile_prod
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker push leverj/layer2:$CIRCLE_BRANCH
+      - run: docker logout

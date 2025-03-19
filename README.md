@@ -44,3 +44,6 @@ $ ./scan docker stop
 $ ./prysm-debug.sh start beacon
 $ ./prysm-debug.sh start validator
 ```
+
+# need to fix for security
+- get rid of `COPY geth_password.txt jwt.hex secret.txt /root/eth_bootstrap/` in Dockerfile
