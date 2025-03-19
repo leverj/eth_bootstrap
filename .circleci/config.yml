@@ -12,7 +12,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-      - run: echo "trying to read organization context for $CIRCLE_BRANCH >  $DOCKER_TEST "
+      - run: echo "trying to read organization context for $CIRCLE_BRANCH >  $DOCKER_USER > $DOCKER_TEST "
       - run: docker info
       - run: docker build -t leverj/layer2:$CIRCLE_BRANCH . -f ./Dockerfile_prod
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
