@@ -4,6 +4,6 @@ RUN apt-get update && apt-get install -y jq
 RUN cd /root/eth_bootstrap && ./install.sh
 
 FROM debian:bookworm-slim
-COPY --from=builder /root/eth_bootstrap/eth_bin /root/eth_bootstrap/default.genesis.json /root/eth_bootstrap/config.yml /root/eth_bootstrap/scripts/
+COPY --from=builder /root/eth_bootstrap/eth_bin /root/eth_bootstrap/scripts/eth_bin
 
 WORKDIR /root/eth_bootstrap
