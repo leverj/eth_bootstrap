@@ -2,9 +2,8 @@ FROM golang:1.22.0-bookworm AS builder
 COPY install.sh /root/eth_bootstrap/
 RUN apt-get update && apt-get install -y jq
 RUN cd /root/eth_bootstrap && ./install.sh
-COPY default.genesis.json config.yml current.genesis.ssz current.genesis.json l2 /root/eth_bootstrap/
 
 FROM debian:bookworm-slim
-COPY --from=builder /root/eth_bootstrap/eth_bin /root/eth_bootstrap/default.genesis.json /root/eth_bootstrap/config.yml /root/eth_bootstrap/
+COPY --from=builder /root/eth_bootstrap/eth_bin /root/eth_bootstrap/default.genesis.json /root/eth_bootstrap/config.yml /root/eth_bootstrap/scripts/
 
 WORKDIR /root/eth_bootstrap

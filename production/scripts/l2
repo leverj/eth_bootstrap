@@ -1,6 +1,6 @@
+#!/usr/bin/env bash
 #!/usr/bin/bash
 
-#!/usr/bin/env bash
 # real path of the folder
 ETH_DIR=$(realpath $(dirname $0))
 CONSENSUS=$ETH_DIR/eth_node/consensus
@@ -34,7 +34,7 @@ DOCKER_ENV=$(read_properties)
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
                   -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-                  eth_node ./l2 $1"
+                  leverj/layer2:main ./l2 $1"
   echo $COMMAND | sh
 }
 
@@ -97,7 +97,7 @@ function stop() {
     beacon) docker stop beacon; docker rm beacon;;
     geth) docker stop geth; docker rm geth;;
     validator) docker stop validator; docker rm validator;;
-    cont in beacon geth validator; do stop $cont; done;;
+    default) for cont in beacon geth validator; do stop $cont; done;;
   esac
 }
 
@@ -119,7 +119,7 @@ function start_container_geth(){
               -p 8545:8545 \
               -p 8546:8546 \
               -p 9001:9001 \
-              eth_node ./l2 geth_start
+              leverj/layer2:main ./l2 geth_start
 }
 
 function beacon_peer(){
@@ -159,7 +159,7 @@ function start_container_beacon(){
               -p 9090:9090 \
               -p 13000:13000\
               -p 12000:12000 \
-              eth_node ./l2 beacon_start
+              leverj/layer2:main ./l2 beacon_start
 }
 function validator_start(){
   $ETH_BIN/validator --datadir $CONSENSUS/.validatordata \
@@ -171,7 +171,7 @@ function start_container_validator(){
   docker run -d --name validator \
               $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-              eth_node ./l2 validator_start
+              leverj/layer2:main ./l2 validator_start
 }
 
 function start() {
@@ -202,7 +202,6 @@ function clean() {
 
 function usage(){
     echo './l2 genesis bootstrap|node'
-    echo './l2 import'
     echo './l2 start [geth|beacon|validator]'
     echo './l2 stop [geth|beacon|validator]'
     echo './l2 clean [geth|beacon|validator]'
