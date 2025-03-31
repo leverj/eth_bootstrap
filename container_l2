@@ -1,0 +1,93 @@
+#!/usr/bin/bash
+
+# real path of the folder
+ETH_DIR=$(realpath $(dirname $0))
+CONSENSUS=$ETH_DIR/eth_node/consensus
+EXECUTION=$ETH_DIR/eth_node/execution
+ETH_BIN=$ETH_DIR/eth_bin
+
+function beacon_genesis(){
+    echo "Generating beacon genesis"
+    cd $CONSENSUS
+    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
+      --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
+      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
+      --output-ssz $CONSENSUS/genesis.ssz
+}
+
+function geth_genesis(){
+    rm -rf $EXECUTION/.gethdata
+    cd $EXECUTION
+    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
+}
+function bootstrap_genesis(){
+    beacon_genesis
+    geth_genesis
+}
+function node_genesis() {
+    cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
+    cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
+    geth_genesis
+}
+
+function geth_start(){
+  $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* \
+    --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
+    --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/eth_node/jwt.hex \
+    --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
+    --allow-insecure-unlock --unlock $GETH_UNLOCK \
+    --verbosity $GETH_VERBOSITY \
+    --password $ETH_DIR/eth_node/geth_password.txt --authrpc.port 8551
+}
+
+function beacon_peer(){
+  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
+  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
+}
+
+function  beacon_start() {
+  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
+  $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
+        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
+      	--p2p-host-ip $P2P_HOST_IP \
+        --genesis-state $CONSENSUS/genesis.ssz \
+        --interop-eth1data-votes \
+        --chain-config-file $CONSENSUS/config.yml \
+        --contract-deployment-block 0 \
+        --chain-id $CHAIN_ID \
+        --network-id $NETWORK_ID \
+        --rpc-host 0.0.0.0 \
+        --grpc-gateway-host 0.0.0.0 \
+        --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
+        --accept-terms-of-use \
+        --jwt-secret $ETH_DIR/eth_node/jwt.hex \
+        --suggested-fee-recipient $SUGGESTED_FEE_RECIPIENT \
+        --minimum-peers-per-subnet 0 \
+        --verbosity $VERBOSITY \
+        --enable-debug-rpc-endpoints
+}
+
+function validator_start(){
+  $ETH_BIN/validator --datadir $CONSENSUS/.validatordata \
+    --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml \
+    --beacon-rpc-provider=172.17.0.1:4000
+}
+
+function usage(){
+    echo './container-l2 bootstrap_genesis'
+    echo './container-l2 node_genesis'
+    echo './container-l2 beacon_start'
+    echo './container-l2 geth_start'
+    echo './container-l2 validator_start'
+}
+
+OPERATION=$1
+shift
+case "${OPERATION}" in
+bootstrap_genesis) bootstrap_genesis $@;;
+node_genesis) node_genesis $@;;
+beacon_start) beacon_start $@;;
+geth_start) geth_start $@;;
+validator_start) validator_start $@;;
+*) usage ;;
+esac

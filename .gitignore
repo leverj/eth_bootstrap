@@ -6,4 +6,4 @@ prysm
 validator_keys
 light-beaconchain-explorer
 beacon-data
-.volumes
+volumes

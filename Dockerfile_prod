@@ -3,7 +3,8 @@ COPY install.sh /root/eth_bootstrap/
 RUN apt-get update && apt-get install -y jq
 RUN cd /root/eth_bootstrap && ./install.sh
 
-FROM debian:bookworm-slim
+FROM debian:bookworm
 COPY --from=builder /root/eth_bootstrap/eth_bin /root/eth_bootstrap/eth_bin
+COPY container_l2 /root/eth_bootstrap/container_l2
 
 WORKDIR /root/eth_bootstrap

@@ -8,6 +8,7 @@ EXECUTION=$ETH_DIR/eth_node/execution
 ETH_BIN=$ETH_DIR/eth_bin
 [[ -f ./default.env ]] && source ./default.env
 [[ -f ./.env ]] && source ./.env
+DOCKER_IMG=${DOCKER_IMG:-leverj/layer2:main}
 
 function keys(){
   local FILE=$1
@@ -34,57 +35,33 @@ DOCKER_ENV=$(read_properties)
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
                   -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-                  leverj/layer2:main ./l2 $1"
+                  $DOCKER_IMG ./container_l2 $1"
   echo $COMMAND | sh
 }
-
 function create_eth_node_directory(){
   rm -rf $ETH_DIR/eth_node/* # do not delete the eth_node directory as it is mounted
   mkdir -p $CONSENSUS
   mkdir -p $EXECUTION
-  cp $ETH_DIR/{geth_password.txt,jwt.hex,secret.txt} $ETH_DIR/eth_node/
-}
-
-function beacon_genesis(){
-    echo "Generating beacon genesis"
-    create_eth_node_directory
-    cd $CONSENSUS
-    cp $ETH_DIR/config.yml .
-    cp $ETH_DIR/default.genesis.json ./genesis.json
-    $ETH_BIN/prysmctl testnet generate-genesis --fork capella --num-validators 64 \
-      --genesis-time-delay 120 --chain-config-file $CONSENSUS/config.yml \
-      --geth-genesis-json-in $CONSENSUS/genesis.json --geth-genesis-json-out $EXECUTION/genesis.json \
-      --output-ssz $CONSENSUS/genesis.ssz
-}
-
-function geth_genesis(){
-    rm -rf $EXECUTION/.gethdata
-    cd $EXECUTION
-    $ETH_BIN/geth --datadir=$EXECUTION/.gethdata init $EXECUTION/genesis.json
-}
-function bootstrap_genesis(){
-    beacon_genesis
-    geth_genesis
-}
-function node_genesis() {
-    create_eth_node_directory
-    cp $ETH_DIR/config.yml $CONSENSUS/
-    cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
-    cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
-    geth_genesis
+  cp $ETH_DIR/{geth_password.txt,jwt.hex} $ETH_DIR/eth_node/
+  cp $ETH_DIR/config.yml $CONSENSUS/ # copy the config file to consensus
+  cp $ETH_DIR/default.genesis.json $CONSENSUS/genesis.json
 }
 
 function genesis() {
   echo "Running genesis for $1"
   local OPERATION=$1
   shift
+  generate_secret geth_password.txt
+  generate_secret jwt.hex
+  create_eth_node_directory
   case $OPERATION in
     bootstrap)
       docker_run_rm bootstrap_genesis
       cp $CONSENSUS/genesis.ssz $ETH_DIR/current.genesis.ssz
       cp $EXECUTION/genesis.json $ETH_DIR/current.genesis.json
       ;;
-    node) docker_run_rm node_genesis;;
+    node)
+      docker_run_rm node_genesis;;
     *) usage;;
   esac
 }
@@ -101,15 +78,6 @@ function stop() {
   esac
 }
 
-function geth_start(){
-  $ETH_BIN/geth --http --http.addr 0.0.0.0 --http.corsdomain=* \
-    --authrpc.vhosts=* --authrpc.addr 0.0.0.0 --http.api eth,net,web3 \
-    --ws --ws.api eth,net,web3 --authrpc.jwtsecret $ETH_DIR/eth_node/jwt.hex \
-    --datadir $EXECUTION/.gethdata --nodiscover --syncmode full \
-    --allow-insecure-unlock --unlock $GETH_UNLOCK \
-    --verbosity $GETH_VERBOSITY \
-    --password $ETH_DIR/eth_node/geth_password.txt --authrpc.port 8551
-}
 function start_container_geth(){
  #fixme: set appropriate ports using -p
   docker run -d --name geth \
@@ -119,34 +87,9 @@ function start_container_geth(){
               -p 8545:8545 \
               -p 8546:8546 \
               -p 9001:9001 \
-              leverj/layer2:main ./l2 geth_start
+              $DOCKER_IMG ./container_l2 geth_start
 }
 
-function beacon_peer(){
-  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
-  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
-}
-function  beacon_start() {
-  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
-  $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
-      	--p2p-host-ip $P2P_HOST_IP \
-        --genesis-state $CONSENSUS/genesis.ssz \
-        --interop-eth1data-votes \
-        --chain-config-file $CONSENSUS/config.yml \
-        --contract-deployment-block 0 \
-        --chain-id $CHAIN_ID \
-        --network-id $NETWORK_ID \
-        --rpc-host 0.0.0.0 \
-        --grpc-gateway-host 0.0.0.0 \
-        --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
-        --accept-terms-of-use \
-        --jwt-secret $ETH_DIR/eth_node/jwt.hex \
-        --suggested-fee-recipient $SUGGESTED_FEE_RECIPIENT \
-        --minimum-peers-per-subnet 0 \
-        --verbosity $VERBOSITY \
-        --enable-debug-rpc-endpoints
-}
 function start_container_beacon(){
 #fixme: set appropriate ports using -p
   docker run -d --name beacon \
@@ -159,19 +102,15 @@ function start_container_beacon(){
               -p 9090:9090 \
               -p 13000:13000\
               -p 12000:12000 \
-              leverj/layer2:main ./l2 beacon_start
+              $DOCKER_IMG ./container_l2 beacon_start
 }
-function validator_start(){
-  $ETH_BIN/validator --datadir $CONSENSUS/.validatordata \
-    --accept-terms-of-use --interop-num-validators 64 --chain-config-file $CONSENSUS/config.yml \
-    --beacon-rpc-provider=172.17.0.1:4000
-}
+
 function start_container_validator(){
   #fixme: set appropriate ports using -p
   docker run -d --name validator \
               $DOCKER_ENV \
               -v $ETH_DIR/eth_node:/root/eth_bootstrap/eth_node \
-              leverj/layer2:main ./l2 validator_start
+              $DOCKER_IMG ./container_l2 validator_start
 }
 
 function start() {
@@ -198,6 +137,15 @@ function clean() {
     validator) rm -rf $CONSENSUS/.validatordata/*;;
     *) for cont in beacon geth validator; do clean $cont; done;;
   esac
+}
+
+function generate_secret() {
+  local SECRET_FILE="$ETH_DIR/$1"
+  if [[ ! -f $PASSWORD_FILE ]]; then
+    echo "0x$(openssl rand -hex 32)" > $SECRET_FILE
+  else
+    echo "Using existing secret: $SECRET_FILE"
+  fi
 }
 
 function usage(){
