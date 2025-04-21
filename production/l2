@@ -26,6 +26,7 @@ function read_properties(){
   for KEY in $KEYS; do
     PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
   done
+  PROPERTIES="$PROPERTIES -e NETWORK_ID=$CHAIN_ID"
   echo "$PROPERTIES"
 }
 
