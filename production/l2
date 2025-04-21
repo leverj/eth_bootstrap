@@ -45,6 +45,7 @@ function create_eth_node_directory(){
   cp $ETH_DIR/{geth_password.txt,jwt.hex} $ETH_DIR/eth_node/
   cp $ETH_DIR/config.yml $CONSENSUS/ # copy the config file to consensus
   cp $ETH_DIR/default.genesis.json $CONSENSUS/genesis.json
+  sed -i "s/\"CHAIN_ID_REPLACE\"/$CHAIN_ID/" "$CONSENSUS/genesis.json"
 }
 
 function genesis() {

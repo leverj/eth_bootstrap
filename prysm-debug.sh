@@ -70,7 +70,7 @@ function docker_beacon() {
     --chain-config-file $CONSENSUS/config.yml \
     --contract-deployment-block 0 \
     --chain-id $CHAIN_ID \
-    --network-id $NETWORK_ID \
+    --network-id $CHAIN_ID \
     --rpc-host 0.0.0.0 \
     --grpc-gateway-host 0.0.0.0 \
     --execution-endpoint $EXECUTION/.gethdata/geth.ipc \
