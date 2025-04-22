@@ -36,7 +36,7 @@ function geth_start(){
 }
 
 function  beacon_start() {
-  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $BEACON_PEER"
+  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $BEACON_PEER_ID"
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
         --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
       	--p2p-host-ip $P2P_HOST_IP \
