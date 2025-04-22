@@ -31,7 +31,7 @@ function read_properties(){
   for KEY in $KEYS; do
     PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
   done
-  PROPERTIES="$PROPERTIES -e NETWORK_ID=$CHAIN_ID -e BEACON_PEER=$(beacon_peer)"
+  PROPERTIES="$PROPERTIES -e NETWORK_ID=$CHAIN_ID -e BEACON_PEER_ID=$(beacon_peer)"
   echo "$PROPERTIES"
 }
 
