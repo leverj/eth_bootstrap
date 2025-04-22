@@ -25,8 +25,6 @@ function bootstrap_genesis(){
     geth_genesis
 }
 function node_genesis() {
-    cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
-    cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
     geth_genesis
 }
 
@@ -37,13 +35,8 @@ function geth_start(){
     --datadir $EXECUTION/.gethdata --nodiscover --syncmode full
 }
 
-function beacon_peer(){
-  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
-  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
-}
-
 function  beacon_start() {
-  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $(beacon_peer)"
+  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $BEACON_PEER"
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
         --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
       	--p2p-host-ip $P2P_HOST_IP \

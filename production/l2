@@ -9,7 +9,7 @@ ETH_BIN=$ETH_DIR/eth_bin
 [[ -f ./default.env ]] && source ./default.env
 [[ -f ./.env ]] && source ./.env
 DOCKER_IMG=${DOCKER_IMG:-leverj/layer2:main}
-
+docker pull $DOCKER_IMG
 function keys(){
   local FILE=$1
   [[ ! -f $FILE ]] && return
@@ -26,12 +26,18 @@ function read_properties(){
   for KEY in $KEYS; do
     PROPERTIES="$PROPERTIES -e $KEY=${!KEY}"
   done
-  PROPERTIES="$PROPERTIES -e NETWORK_ID=$CHAIN_ID"
+  PROPERTIES="$PROPERTIES -e NETWORK_ID=$CHAIN_ID -e BEACON_PEER=$(beacon_peer)"
   echo "$PROPERTIES"
 }
 
 DOCKER_ENV=$(read_properties)
 #echo "DOCKER_ENV: $DOCKER_ENV"
+
+
+function beacon_peer(){
+  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
+  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
+}
 
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
@@ -63,6 +69,8 @@ function genesis() {
       cp $EXECUTION/genesis.json $ETH_DIR/current.genesis.json
       ;;
     node)
+      cp $ETH_DIR/current.genesis.ssz $CONSENSUS/genesis.ssz
+      cp $ETH_DIR/current.genesis.json $EXECUTION/genesis.json
       docker_run_rm node_genesis;;
     *) usage;;
   esac
