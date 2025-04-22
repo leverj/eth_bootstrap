@@ -17,6 +17,11 @@ function keys(){
   echo $KEYS
 }
 
+function beacon_peer(){
+  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
+  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
+}
+
 function read_properties(){
   [[ ! -f ./default.env ]] && return
   local KEYS=$(keys ./default.env)
@@ -32,12 +37,6 @@ function read_properties(){
 
 DOCKER_ENV=$(read_properties)
 #echo "DOCKER_ENV: $DOCKER_ENV"
-
-
-function beacon_peer(){
-  local PEER_ID=$(curl --silent http://$GENESIS_BEACON_IP:$GENESIS_BEACON_RPC_PORT/eth/v1/node/identity | jq --raw-output '.data.peer_id')
-  echo "/ip4/$GENESIS_BEACON_IP/tcp/$GENESIS_BEACON_TCP_PORT/p2p/$PEER_ID"
-}
 
 function docker_run_rm() {
   local COMMAND="docker run -i --rm \
