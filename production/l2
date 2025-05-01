@@ -83,7 +83,7 @@ function stop() {
     beacon) docker stop beacon; docker rm beacon;;
     geth) docker stop geth; docker rm geth;;
     validator) docker stop validator; docker rm validator;;
-    default) for cont in beacon geth validator; do stop $cont; done;;
+    *) for cont in beacon geth validator; do stop $cont; done;;
   esac
 }
 
