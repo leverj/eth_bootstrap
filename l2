@@ -286,12 +286,12 @@ function docker_bash() {
 
 function start_explorer(){
   stop_explorer
-  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  up -d
-  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  rm -f
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml --env-file $ETH_DIR/blockscout/envs/common-blockscout.env up -d
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml --env-file $ETH_DIR/blockscout/envs/common-blockscout.env rm -f
 }
 
 function stop_explorer(){
-  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml  rm -sfv
+  docker-compose -f $ETH_DIR/blockscout/docker-compose.yml --env-file $ETH_DIR/blockscout/envs/common-blockscout.env rm -sfv
 }
 
 function clean_explorer(){
