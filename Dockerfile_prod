@@ -1,6 +1,7 @@
 FROM golang:1.22.0-bookworm AS builder
 COPY install.sh /root/eth_bootstrap/
 RUN apt-get update && apt-get install -y jq
+
 RUN cd /root/eth_bootstrap && ./install.sh
 
 FROM debian:bookworm
