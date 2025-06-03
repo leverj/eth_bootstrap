@@ -20,6 +20,7 @@ function get_geth(){
 
 function create_prysm(){
     cd $ETH_DIR
+    echo "downloading prysm"
 #    original codebase
 #    git clone --branch v5.0.3 https://github.com/prysmaticlabs/prysm.git
     git clone --branch workaround-hack https://github.com/leverj/prysm.git
