@@ -148,6 +148,14 @@ function clean() {
   esac
 }
 
+function create_check_point(){
+  docker exec -i beacon bash -c "
+     mkdir -p eth_node/checkpoint
+     cd eth_node/checkpoint
+    ../../eth_bin/prysmctl checkpoint-sync download --beacon-node-host=http://localhost:3500
+  "
+}
+
 function generate_secret() {
   local SECRET_FILE="$ETH_DIR/$1"
   if [[ ! -f $PASSWORD_FILE ]]; then
@@ -171,6 +179,7 @@ genesis) genesis $@;;
 start) start $@;;
 stop) stop $@;;
 clean) clean $@;;
+create_check_point) create_check_point $@;;
 *) usage ;;
 esac
 
