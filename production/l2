@@ -150,10 +150,13 @@ function clean() {
 
 function create_check_point(){
   docker exec -i beacon bash -c "
-     mkdir -p eth_node/checkpoint
-     cd eth_node/checkpoint
+    rm -rf eth_node/checkpoint
+    mkdir -p eth_node/checkpoint
+    cd eth_node/checkpoint
     ../../eth_bin/prysmctl checkpoint-sync download --beacon-node-host=http://localhost:3500
   "
+  mv $ETH_DIR/eth_node/checkpoint/block* $ETH_DIR/block_interop_capella.ssz
+  mv $ETH_DIR/eth_node/checkpoint/state* $ETH_DIR/state_interop_capella.ssz
 }
 
 function generate_secret() {
