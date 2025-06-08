@@ -51,6 +51,8 @@ function create_eth_node_directory(){
   cp $ETH_DIR/{geth_password.txt,jwt.hex} $ETH_DIR/eth_node/
   cp $ETH_DIR/config.yml $CONSENSUS/ # copy the config file to consensus
   cp $ETH_DIR/default.genesis.json $CONSENSUS/genesis.json
+  [[ -f $ETH_DIR/block_interop_capella.ssz ]] && cp $ETH_DIR/block_interop_capella.ssz $CONSENSUS
+  [[ -f $ETH_DIR/state_interop_capella.ssz ]] && cp $ETH_DIR/state_interop_capella.ssz $CONSENSUS
   sed -i "s/\"CHAIN_ID_REPLACE\"/$CHAIN_ID/" "$CONSENSUS/genesis.json"
 }
 
@@ -173,6 +175,7 @@ function usage(){
     echo './l2 start [geth|beacon|validator]'
     echo './l2 stop [geth|beacon|validator]'
     echo './l2 clean [geth|beacon|validator]'
+    echo './l2 create_check_point'
 }
 
 OPERATION=$1

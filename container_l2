@@ -36,9 +36,13 @@ function geth_start(){
 }
 
 function  beacon_start() {
-  [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] && BEACON_PEER="--peer $BEACON_PEER_ID"
+  if [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] then
+      BEACON_PEER="--peer $BEACON_PEER_ID"
+      CHECKPOINT_BLOCK="--checkpoint-block=$CONSENSUS/block_interop_capella.ssz"
+      CHECKPOINT_STATE="--checkpoint-state=$CONSENSUS/state_interop_capella.ssz"
+  fi
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
+        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER $CHECKPOINT_BLOCK $CHECKPOINT_STATE\
       	--p2p-host-ip $P2P_HOST_IP \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
