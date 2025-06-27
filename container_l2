@@ -36,17 +36,20 @@ function geth_start(){
 }
 
 function  beacon_start() {
+	echo 'beacon_start'
   if [[ "$BEACON_MIN_SYNC_PEERS" -eq 1 ]] then
       BEACON_PEER="--peer $BEACON_PEER_ID"
       CHECKPOINT_BLOCK="--checkpoint-block=$CONSENSUS/block_interop_capella.ssz"
       CHECKPOINT_STATE="--checkpoint-state=$CONSENSUS/state_interop_capella.ssz"
   fi
+  echo 'MIN SYNC  PEERS'
+  echo ${BEACON_MIN_SYNC_PEERS}
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
-        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER $CHECKPOINT_BLOCK $CHECKPOINT_STATE\
+        --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
       	--p2p-host-ip $P2P_HOST_IP \
-	      --disable-peer-scorer true \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
+	      --disable-peer-scorer \
         --chain-config-file $CONSENSUS/config.yml \
         --contract-deployment-block 0 \
         --chain-id $CHAIN_ID \
@@ -77,6 +80,7 @@ function usage(){
 }
 
 OPERATION=$1
+echo 'OPERATION' ${OPERATION}
 shift
 case "${OPERATION}" in
 bootstrap_genesis) bootstrap_genesis $@;;
