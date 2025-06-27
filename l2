@@ -204,6 +204,7 @@ function  beacon_start() {
   $ETH_BIN/beacon-chain --datadir $CONSENSUS/.beacondata \
         --min-sync-peers $BEACON_MIN_SYNC_PEERS $BEACON_PEER \
       	--p2p-host-ip $P2P_HOST_IP \
+	      --disable-peer-scorer \
         --genesis-state $CONSENSUS/genesis.ssz \
         --interop-eth1data-votes \
         --chain-config-file $CONSENSUS/config.yml \

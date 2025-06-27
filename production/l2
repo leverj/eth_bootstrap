@@ -51,8 +51,11 @@ function create_eth_node_directory(){
   cp $ETH_DIR/{geth_password.txt,jwt.hex} $ETH_DIR/eth_node/
   cp $ETH_DIR/config.yml $CONSENSUS/ # copy the config file to consensus
   cp $ETH_DIR/default.genesis.json $CONSENSUS/genesis.json
-  [[ -f $ETH_DIR/block_interop_capella.ssz ]] && cp $ETH_DIR/block_interop_capella.ssz $CONSENSUS
-  [[ -f $ETH_DIR/state_interop_capella.ssz ]] && cp $ETH_DIR/state_interop_capella.ssz $CONSENSUS
+  # if ($ETH_DIR/block_interop_capella.ssz exists and BEACON_MIN_SYNC_PEERS is not 0) then copy  block_interop_capella and state_interop_capella files to CONSENSUS
+  if [[ -f $ETH_DIR/block_interop_capella.ssz && "$BEACON_MIN_SYNC_PEERS" -ne 0 ]]; then
+    cp $ETH_DIR/block_interop_capella.ssz $CONSENSUS
+    cp $ETH_DIR/state_interop_capella.ssz $CONSENSUS
+  fi
   sed -i "s/\"CHAIN_ID_REPLACE\"/$CHAIN_ID/" "$CONSENSUS/genesis.json"
 }
 
@@ -179,6 +182,7 @@ function usage(){
 }
 
 OPERATION=$1
+echo 'OPERATIION' ${OPERATION}
 shift
 case "${OPERATION}" in
 genesis) genesis $@;;
